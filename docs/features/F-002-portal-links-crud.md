@@ -87,7 +87,7 @@ audit F-002 OK (minimal traceability grep)
 $ cd apps/portal && bun run build
 [build] Complete!
 
-fingerprint: 2026-05-01T11:43:45+00:00 (approx build timestamp in session)
+commit: `370b9b1` branch `feat/f-002-portal`
 ```
 
 ## Changelog Entry
