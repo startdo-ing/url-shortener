@@ -1,3 +1,7 @@
+export type { ValidateDestinationResult } from "./url";
+export { validateDestinationUrl } from "./url";
+export { generateRandomSlug } from "./slug-gen";
+
 /** Matches a single slug path segment after decode (ASCII alnum + `-`/`_`). */
 export const SLUG_SEGMENT_PATTERN =
   /^[a-zA-Z0-9_-]{1,128}$/;
@@ -22,4 +26,12 @@ export function parseSingleSlugSegment(pathname: string): string | null {
   if (decoded.includes("/") || decoded.includes("?")) return null;
   if (!isAllowedSlugSegment(decoded)) return null;
   return decoded;
+}
+
+/** Custom slug field from portal (trim, strip leading slashes). Empty → null → caller may generate random. */
+export function parseSlugInput(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  const stripped = raw.trim().replace(/^\/+/, "");
+  if (!stripped) return null;
+  return parseSingleSlugSegment(`/${stripped}`);
 }

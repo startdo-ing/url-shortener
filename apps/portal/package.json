@@ -1,0 +1,25 @@
+{
+  "name": "@url-shortener/portal",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port 4321",
+    "build": "astro build",
+    "preview": "astro preview --port 4321",
+    "start": "node ./dist/server/entry.mjs"
+  },
+  "dependencies": {
+    "@astrojs/node": "^9.0.0",
+    "@astrojs/svelte": "^7.0.0",
+    "@url-shortener/core": "workspace:*",
+    "astro": "^5.0.0",
+    "postgres": "^3.4.5",
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
+    "@types/node": "^22.13.14",
+    "typescript": "~5.7.3"
+  }
+}

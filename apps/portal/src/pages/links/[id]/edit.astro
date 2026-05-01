@@ -1,0 +1,72 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import { getLinkById } from "../../../server/db";
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/", 302);
+
+const codes: Record<string, string> = {
+  invalid_destination: "Invalid destination URL (only http and https links are allowed).",
+  invalid_slug:
+    "Custom slug invalid — use 1–128 characters: letters, digits, hyphen, underscore.",
+  duplicate_slug: "That slug is already taken. Pick another.",
+};
+
+const rawErr = Astro.url.searchParams.get("error");
+const errorBanner = rawErr ? codes[rawErr] ?? "Could not save link." : null;
+
+let row = await getLinkById(id);
+
+if (!row) {
+  return new Response(null, { status: 404 });
+}
+---
+
+<Layout title={`Edit · ${row.slug}`} errorBanner={errorBanner}>
+  <div class="toolbar">
+    <h1 style="margin:0">Edit link</h1>
+    <a href="/">&larr; Back</a>
+  </div>
+  <div class="card">
+    <form method="post" action="/api/update-link">
+      <input type="hidden" name="id" value={id} />
+      <div class="field">
+        <label for="destination_url">destination URL</label>
+        <input id="destination_url" name="destination_url" required type="url" value={row.destination_url} />
+      </div>
+      <div class="field">
+        <label for="slug">slug</label>
+        <input id="slug" name="slug" required value={row.slug} autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="redirect_type">redirect</label>
+        <select id="redirect_type" name="redirect_type">
+          {[302, 301].map((code) => (
+            <option value={code} selected={row.redirect_type === code}>
+              {code === 302 ? "302 temporary" : "301 permanent"}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div class="field">
+        <label for="status">status</label>
+        <select id="status" name="status">
+          {(["active", "paused"] as const).map((st) => (
+            <option value={st} selected={row.status === st}>
+              {st}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div class="field">
+        <label for="display_title">display title (optional)</label>
+        <input id="display_title" name="display_title" type="text" value={row.display_title ?? ""} />
+      </div>
+      <div class="field">
+        <label for="notes_markdown">notes</label>
+        <textarea id="notes_markdown" name="notes_markdown">{row.notes_markdown ?? ""}</textarea>
+      </div>
+      <button class="btn-primary" type="submit">Update link</button>
+    </form>
+  </div>
+</Layout>

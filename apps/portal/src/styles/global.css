@@ -1,0 +1,172 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;500&display=swap");
+
+:root {
+  --primary: #0f1112;
+  --secondary: #6f7478;
+  --tertiary: #00a36c;
+  --neutral: #fafaf8;
+  --surface: #ffffff;
+  --on-primary: #ffffff;
+  --rounded-md: 5px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  background: var(--neutral);
+  color: var(--primary);
+}
+
+a {
+  color: var(--tertiary);
+}
+
+a:visited {
+  color: var(--tertiary);
+}
+
+code,
+kbd,
+.label,
+label {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+}
+
+h1 {
+  font-weight: 500;
+  font-size: 2rem;
+  margin: 0 0 1rem;
+}
+
+.page {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+.card {
+  background: var(--surface);
+  color: var(--primary);
+  border-radius: 8px;
+  padding: 24px;
+  border: 1px solid var(--secondary);
+}
+
+.banner {
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: var(--rounded-md);
+  border: 1px solid var(--secondary);
+  background: var(--surface);
+}
+
+.banner--error {
+  border-color: var(--secondary);
+  color: var(--primary);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 400;
+  text-align: left;
+  color: var(--secondary);
+  padding: 8px;
+  border-bottom: 1px solid var(--secondary);
+}
+
+td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #e8e9ea;
+}
+
+.truncate {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.note-excerpt {
+  color: var(--secondary);
+  max-width: 200px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+}
+
+.btn-primary {
+  display: inline-block;
+  padding: 12px 20px;
+  background: var(--tertiary);
+  color: var(--on-primary);
+  border-radius: var(--rounded-md);
+  text-decoration: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn-plain {
+  background: transparent;
+  border: none;
+  color: var(--tertiary);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--secondary);
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  max-width: 480px;
+  padding: 8px;
+  border: 1px solid var(--secondary);
+  border-radius: var(--rounded-md);
+  font: inherit;
+}
+
+.field textarea {
+  min-height: 88px;
+  resize: vertical;
+}

@@ -1,0 +1,33 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  errorBanner?: string | null;
+}
+
+const { title, errorBanner } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div class="page">
+      {errorBanner &&
+        (
+          <div class="banner banner--error" role="alert">
+            {errorBanner}
+          </div>
+        )}
+      <slot />
+      <footer class="label" style="margin-top: 48px; color: var(--secondary);">
+        Deployment-level access only · no in-app auth (see ARCHITECTURE)
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,90 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { listLinks } from "../server/db";
+
+const flash = Astro.url.searchParams.get("deleted")
+  ? "Link deleted."
+  : Astro.url.searchParams.get("created")
+    ? "Link saved."
+    : Astro.url.searchParams.get("updated")
+      ? "Link updated."
+      : null;
+
+let rows = [] as import("../server/db").LinkRow[];
+let dbBanner: string | null = null;
+
+try {
+  rows = await listLinks();
+} catch {
+  dbBanner = "Could not load links — check DATABASE_URL and Postgres.";
+}
+---
+
+<Layout title="Short links" errorBanner={dbBanner}>
+  <div class="toolbar">
+    <h1 style="margin:0">Links</h1>
+    <a href="/links/new" class="btn-primary">New link</a>
+  </div>
+  {
+    flash && (
+      <div class="banner" role="status">
+        {flash}
+      </div>
+    )
+  }
+  {
+    rows.length === 0 && (
+      <div class="card">
+        No links yet. <a href="/links/new">Create one</a>.
+      </div>
+    )
+  }
+  {
+    rows.length > 0 && (
+      <div class="card" style="padding:0; overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>slug</th>
+              <th>destination</th>
+              <th>status</th>
+              <th>redirect</th>
+              <th>notes</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr>
+                <td>{r.slug}</td>
+                <td class="truncate" title={r.destination_url}>{r.destination_url}</td>
+                <td>{r.status}</td>
+                <td>{r.redirect_type}</td>
+                <td>
+                  {r.notes_markdown?.trim() ? (
+                    <span class="note-excerpt">{r.notes_markdown.trim()}</span>
+                  ) : (
+                    <span class="label" style="color:var(--secondary)">
+                      —
+                    </span>
+                  )}
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <a href={`/links/${r.id}/edit`}>Edit</a>
+                    <form style="margin:0" method="post" action="/api/delete-link">
+                      <input type="hidden" name="id" value={r.id} />
+                      <button class="btn-plain" type="submit">
+                        Delete
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+</Layout>

@@ -5,6 +5,8 @@
   "scripts": {
     "test": "bun test",
     "db:migrate": "bun run packages/db/scripts/migrate.ts",
-    "redirect": "bun run apps/redirect/src/server.ts"
+    "redirect": "bun run apps/redirect/src/server.ts",
+    "portal": "bun run --cwd apps/portal dev",
+    "portal:build": "bun run --cwd apps/portal build"
   }
 }

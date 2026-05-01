@@ -11,7 +11,7 @@ Baseline decision: **[ADR 0001](docs/adr/0001-monorepo-two-apps-postgres.md)** (
 | Path | Role |
 |------|------|
 | `apps/redirect` | Public `GET /:slug` only; resolves link rows; persists `click_events` without blocking redirect success ([R-006](docs/REQUIREMENTS.md)). |
-| `apps/portal` | Astro + Svelte SSR; operator UI and server actions / API routes for links, unfurl, analytics reads. |
+| `apps/portal` | Astro + Svelte SSR (F-002: link CRUD; later unfurl/analytics); form posts to `/api/*`; `output: server`, `@astrojs/node` standalone. |
 | `packages/core` | Pure validation, slug rules, shared types, optional Effect layers; **no** framework imports. |
 | `packages/db` | Schema, migrations, shared query helpers (or equivalent single migration root—name may be `db/` if tooling prefers). |
 

@@ -12,5 +12,12 @@ if [[ "$id" == "F-001" ]]; then
   echo "audit $id OK (minimal traceability grep)"
   exit 0
 fi
+if [[ "$id" == "F-002" ]]; then
+  test -f docs/features/F-002-portal-links-crud.md
+  grep -q 'R-005' packages/core/src/url.test.ts
+  test -d apps/portal/src/pages
+  echo "audit $id OK (minimal traceability grep)"
+  exit 0
+fi
 echo "audit: no rule for $id — extend tools/audit.sh" >&2
 exit 3
