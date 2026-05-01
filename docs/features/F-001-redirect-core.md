@@ -211,7 +211,7 @@ audit F-001 OK (minimal traceability grep)
 → fingerprint: date -Is ⇒ 2026-05-01T11:36:37+00:00; docker unavailable here so Postgres end-to-end insert not exercised in this run (operator: `docker compose up -d`, `bun run db:migrate`, insert seed row, `bun run redirect` + curl)
 ```
 
-Git SHA recorded after first commit on `feat/f-001-redirect-core` (populate with `git rev-parse HEAD` post-merge locally).
+Commit: `6c2c0eab01b00b92099fa3e11724a8aa2b9be1b0` on `feat/f-001-redirect-core`.
 
 ---
 
