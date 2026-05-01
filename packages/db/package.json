@@ -1,0 +1,9 @@
+{
+  "name": "@url-shortener/db",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "postgres": "^3.4.5"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "url-shortener",
+    },
+    "apps/redirect": {
+      "name": "@url-shortener/redirect",
+      "version": "0.0.0",
+      "dependencies": {
+        "@url-shortener/core": "workspace:*",
+        "postgres": "^3.4.5",
+      },
+    },
+    "packages/core": {
+      "name": "@url-shortener/core",
+      "version": "0.0.0",
+    },
+    "packages/db": {
+      "name": "@url-shortener/db",
+      "version": "0.0.0",
+      "dependencies": {
+        "postgres": "^3.4.5",
+      },
+    },
+  },
+  "packages": {
+    "@url-shortener/core": ["@url-shortener/core@workspace:packages/core"],
+
+    "@url-shortener/db": ["@url-shortener/db@workspace:packages/db"],
+
+    "@url-shortener/redirect": ["@url-shortener/redirect@workspace:apps/redirect"],
+
+    "postgres": ["postgres@3.4.9", "", {}, "sha512-GD3qdB0x1z9xgFI6cdRD6xu2Sp2WCOEoe3mtnyB5Ee0XrrL5Pe+e4CCnJrRMnL1zYtRDZmQQVbvOttLnKDLnaw=="],
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "url-shortener",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "test": "bun test",
+    "db:migrate": "bun run packages/db/scripts/migrate.ts",
+    "redirect": "bun run apps/redirect/src/server.ts"
+  }
+}

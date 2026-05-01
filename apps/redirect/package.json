@@ -1,0 +1,13 @@
+{
+  "name": "@url-shortener/redirect",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@url-shortener/core": "workspace:*",
+    "postgres": "^3.4.5"
+  },
+  "scripts": {
+    "start": "bun run src/server.ts"
+  }
+}
