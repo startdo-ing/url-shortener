@@ -5,9 +5,15 @@
   "private": true,
   "dependencies": {
     "@url-shortener/core": "workspace:*",
-    "postgres": "^3.4.5"
+    "isbot": "^5.1.39",
+    "maxmind": "^5.0.6",
+    "postgres": "^3.4.5",
+    "ua-parser-js": "^2.0.9"
   },
   "scripts": {
     "start": "bun run src/server.ts"
+  },
+  "devDependencies": {
+    "@types/ua-parser-js": "^0.7.39"
   }
 }

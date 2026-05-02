@@ -1,16 +1,47 @@
 ---
+import NotesEditor from "../../../components/NotesEditor.svelte";
 import Layout from "../../../layouts/Layout.astro";
 import { getLinkById } from "../../../server/db";
+import { getTagsForLinkIds, listUtmTemplates } from "../../../server/marketer";
 
 const { id } = Astro.params;
 if (!id) return Astro.redirect("/", 302);
+
+let templates = [] as import("../../../server/marketer").UtmTemplateRow[];
+try {
+  templates = await listUtmTemplates();
+} catch {
+  templates = [];
+}
+
+let tagsCsv = "";
+try {
+  const tagMap = await getTagsForLinkIds([id]);
+  tagsCsv = tagMap.get(id)?.join(", ") ?? "";
+} catch {
+  tagsCsv = "";
+}
+
+const shortBase = import.meta.env.PUBLIC_SHORT_BASE_URL
+  ? String(import.meta.env.PUBLIC_SHORT_BASE_URL).replace(/\/$/, "")
+  : "";
 
 const codes: Record<string, string> = {
   invalid_destination: "Invalid destination URL (only http and https links are allowed).",
   invalid_slug:
     "Custom slug invalid — use 1–128 characters: letters, digits, hyphen, underscore.",
   duplicate_slug: "That slug is already taken. Pick another.",
+  invalid_expires: "Expiry date/time is invalid. Use the picker or leave empty.",
+  notes_too_large: "Notes exceed 64KB (UTF-8). Shorten and try again.",
 };
+
+const previewFlash = Astro.url.searchParams.get("preview");
+const previewBanner =
+  previewFlash === "ok"
+    ? "Preview updated from destination."
+    : previewFlash === "error"
+      ? "Preview unavailable (blocked URL, timeout, or not HTML)."
+      : null;
 
 const rawErr = Astro.url.searchParams.get("error");
 const errorBanner = rawErr ? codes[rawErr] ?? "Could not save link." : null;
@@ -22,10 +53,23 @@ if (!row) {
 }
 ---
 
-<Layout title={`Edit · ${row.slug}`} errorBanner={errorBanner}>
+<Layout
+  title={`Edit · ${row.slug}`}
+  errorBanner={errorBanner}
+  statusBanner={previewBanner}
+  statusVariant={previewFlash === "ok" ? "ok" : previewFlash === "error" ? "warn" : null}
+>
   <div class="toolbar">
     <h1 style="margin:0">Edit link</h1>
-    <a href="/">&larr; Back</a>
+    <div style="display:flex; gap:12px; align-items:baseline; flex-wrap:wrap">
+      <a href={`/api/links/${encodeURIComponent(id)}/qr.svg`} download={`${row.slug}-qr.svg`}>
+        QR (SVG)
+      </a>
+      <a href="/utm">UTM</a>
+      <a href="/tags">Tags</a>
+      <a href={`/analytics/${encodeURIComponent(row.slug)}`}>Analytics</a>
+      <a href="/">&larr; Back</a>
+    </div>
   </div>
   <div class="card">
     <form method="post" action="/api/update-link">
@@ -34,6 +78,32 @@ if (!row) {
         <label for="destination_url">destination URL</label>
         <input id="destination_url" name="destination_url" required type="url" value={row.destination_url} />
       </div>
+      <div class="field">
+        <label for="utm_template_id">UTM template (optional, on save)</label>
+        <select id="utm_template_id" name="utm_template_id">
+          <option value="">— none —</option>
+          {templates.map((t) => (
+            <option value={t.id}>{t.name}</option>
+          ))}
+        </select>
+        <p class="label" style="margin:8px 0 0; color:var(--secondary)">
+          Merges into the URL above when you click Update (adds/overwrites utm_* params).
+        </p>
+      </div>
+      <div class="field">
+        <label for="tags">tags (comma-separated)</label>
+        <input id="tags" name="tags" type="text" value={tagsCsv} placeholder="launch, q4" autocomplete="off" />
+      </div>
+      {
+        shortBase && (
+          <p class="label" style="margin:-8px 0 12px; color:var(--secondary)">
+            Short URL (for QR):{" "}
+            <code style="word-break:break-all">
+              {shortBase}/{encodeURIComponent(row.slug)}
+            </code>
+          </p>
+        )
+      }
       <div class="field">
         <label for="slug">slug</label>
         <input id="slug" name="slug" required value={row.slug} autocomplete="off" />
@@ -63,10 +133,27 @@ if (!row) {
         <input id="display_title" name="display_title" type="text" value={row.display_title ?? ""} />
       </div>
       <div class="field">
-        <label for="notes_markdown">notes</label>
-        <textarea id="notes_markdown" name="notes_markdown">{row.notes_markdown ?? ""}</textarea>
+        <label for="expires_at">expires at (optional, UTC)</label>
+        <input
+          id="expires_at"
+          name="expires_at"
+          type="datetime-local"
+          value={row.expires_at ? row.expires_at.toISOString().slice(0, 16) : ""}
+        />
+      </div>
+      <div class="field">
+        <label for="notes_markdown_field">notes (markdown)</label>
+        <NotesEditor client:load initialMarkdown={row.notes_markdown ?? ""} />
       </div>
       <button class="btn-primary" type="submit">Update link</button>
+    </form>
+    <form style="margin-top:16px; padding-top:16px; border-top:1px solid #e8e9ea" method="post" action="/api/link-preview">
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="return_to" value="edit" />
+      <p class="label" style="margin:0 0 12px; color:var(--secondary)">
+        Fetches destination HTML (bounded, SSRF-aware) and stores list preview metadata.
+      </p>
+      <button class="btn-plain" type="submit" style="padding:8px 0">Fetch preview from URL</button>
     </form>
   </div>
 </Layout>

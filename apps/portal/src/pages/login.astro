@@ -1,0 +1,35 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+if (Astro.locals.authed) {
+  return Astro.redirect("/", 302);
+}
+
+const err = Astro.url.searchParams.get("error");
+const errBanner =
+  err === "bad"
+    ? "Incorrect password."
+    : err === "config"
+      ? "PORTAL_AUTH_HASH is not set (bcrypt hash of operator password)."
+      : err === "auth_off"
+        ? "Session auth is not enabled (AUTH_MODE)."
+        : null;
+---
+
+<Layout title="Log in" errorBanner={errBanner}>
+  <div class="toolbar">
+    <h1 style="margin:0">Portal login</h1>
+  </div>
+  <div class="card" style="max-width:420px">
+    <p class="label" style="margin:0 0 16px; color:var(--secondary)">
+      AUTH_MODE=session requires a valid session for management pages. API v1 uses Bearer keys only.
+    </p>
+    <form method="post" action="/api/login">
+      <div class="field">
+        <label for="password">password</label>
+        <input id="password" name="password" type="password" required autocomplete="current-password" />
+      </div>
+      <button class="btn-primary" type="submit">Sign in</button>
+    </form>
+  </div>
+</Layout>

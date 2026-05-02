@@ -1,0 +1,98 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { listActiveApiKeys } from "../server/api-keys";
+
+const once = Astro.url.searchParams.get("once");
+const created = Astro.url.searchParams.get("created");
+const revoked = Astro.url.searchParams.get("revoked");
+const err = Astro.url.searchParams.get("error");
+
+const statusBanner =
+  created && once
+    ? "Copy the key below now — it will not be shown again."
+    : revoked
+      ? "API key revoked."
+      : null;
+
+let loadError = false;
+const errBanner =
+  err === "missing"
+    ? "Missing key id."
+    : null;
+
+let rows = [] as Awaited<ReturnType<typeof listActiveApiKeys>>;
+try {
+  rows = await listActiveApiKeys();
+} catch {
+  loadError = true;
+  rows = [];
+}
+---
+
+<Layout
+  title="API keys"
+  statusBanner={statusBanner}
+  statusVariant={statusBanner ? "ok" : null}
+  errorBanner={loadError ? "Could not load keys — run migrations (003) and check DATABASE_URL." : errBanner}
+>
+  <div class="toolbar">
+    <h1 style="margin:0">API keys</h1>
+    <div style="display:flex; gap:12px; align-items:center">
+      <a href="/">Links</a>
+    </div>
+  </div>
+
+  {
+    once && (
+      <div class="banner banner--ok" role="status">
+        <div class="label" style="margin-bottom:8px">
+          New key (copy now)
+        </div>
+        <code style="word-break:break-all; user-select:all">{Buffer.from(once, "base64url").toString("utf8")}</code>
+      </div>
+    )
+  }
+
+  <div class="card" style="margin-bottom:16px">
+    <h2 style="margin-top:0; font-size:1.05rem">Create key</h2>
+    <p class="label" style="margin:0 0 12px; color:var(--secondary)">
+      Use header <code>Authorization: Bearer &lt;key&gt;</code> on <code>/api/v1/*</code>. Only a SHA-256 hash is stored (R-033).
+    </p>
+    <form method="post" action="/api/api-key-create">
+      <div class="field">
+        <label for="name">label (optional)</label>
+        <input id="name" name="name" type="text" placeholder="laptop" maxlength="128" />
+      </div>
+      <button class="btn-primary" type="submit">Generate key</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0; font-size:1.05rem">Active keys</h2>
+    {
+      rows.length === 0 && (
+        <p style="color:var(--secondary); margin:0">No keys yet — create one for REST access.</p>
+      )
+    }
+    {
+      rows.map((k) => (
+        <div
+          style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; padding:12px 0; border-top:1px solid #e8e9ea"
+        >
+          <div>
+            <div style="font-weight:500">{k.name || "(unnamed)"}</div>
+            <div class="label" style="margin-top:6px; color:var(--secondary)">
+              prefix <code>{k.key_prefix}</code> · created {k.created_at.toISOString().slice(0, 10)}
+            </div>
+          </div>
+          <form method="post" action="/api/api-key-revoke" style="margin:0">
+            <input type="hidden" name="id" value={k.id} />
+            <button class="btn-plain" type="submit">
+              Revoke
+            </button>
+          </form>
+        </div>
+      ))
+    }
+  </div>
+</Layout>

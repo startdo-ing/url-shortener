@@ -1,5 +1,8 @@
 export type { ValidateDestinationResult } from "./url";
 export { validateDestinationUrl } from "./url";
+export { isSsrfBlockedUrl } from "./ssrf-host";
+export type { TargetPreview } from "./unfurl-meta";
+export { extractTargetPreviewFromHtml, resolveUrlReference } from "./unfurl-meta";
 export { generateRandomSlug } from "./slug-gen";
 
 /** Matches a single slug path segment after decode (ASCII alnum + `-`/`_`). */
@@ -29,6 +32,9 @@ export function parseSingleSlugSegment(pathname: string): string | null {
 }
 
 /** Custom slug field from portal (trim, strip leading slashes). Empty → null → caller may generate random. */
+export type { UtmTemplateFields } from "./utm-merge";
+export { mergeUtmParamsIntoUrl } from "./utm-merge";
+
 export function parseSlugInput(raw: string | null | undefined): string | null {
   if (raw == null) return null;
   const stripped = raw.trim().replace(/^\/+/, "");

@@ -1,5 +1,8 @@
 import type { APIRoute } from "astro";
-import { createLink } from "../../server/mutations";
+import { parseTagNamesInput } from "../../lib/tag-input";
+import { setLinkTags } from "../../server/marketer";
+import { createLink, parseExpiresAtForm } from "../../server/mutations";
+import { applyUtmTemplateIfPresent } from "../../server/utm-apply";
 
 export const prerender = false;
 
@@ -11,7 +14,8 @@ function read(form: FormData, key: string): string | null {
 export const POST: APIRoute = async ({ request, redirect }) => {
   const form = await request.formData();
 
-  const destination_url = String(form.get("destination_url") ?? "");
+  let destination_url = String(form.get("destination_url") ?? "");
+  destination_url = await applyUtmTemplateIfPresent(destination_url, String(form.get("utm_template_id") ?? ""));
 
   const redirect_type = Number(form.get("redirect_type")) === 301 ? 301 : 302;
 
@@ -27,6 +31,12 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const nm = read(form, "notes_markdown");
   const notes_markdown = nm?.trim() ? nm.trim() : null;
 
+  const expRaw = read(form, "expires_at");
+  const expParsed = parseExpiresAtForm(expRaw);
+  if (expParsed === "invalid") {
+    return redirect("/links/new?error=invalid_expires", 303);
+  }
+
   const r = await createLink({
     destination_url,
     slugField,
@@ -34,11 +44,15 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     status,
     display_title,
     notes_markdown,
+    expires_at: expParsed,
   });
 
   if (!r.ok) {
     return redirect(`/links/new?error=${encodeURIComponent(r.code)}`, 303);
   }
+
+  const tags = parseTagNamesInput(String(form.get("tags") ?? ""));
+  await setLinkTags(r.linkId, tags);
 
   return redirect("/?created=1", 303);
 };

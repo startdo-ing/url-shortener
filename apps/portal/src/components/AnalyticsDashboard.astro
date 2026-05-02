@@ -1,0 +1,285 @@
+---
+import type { AnalyticsBundle, AnalyticsRange } from "../server/analytics";
+import { MAX_ANALYTICS_RANGE_DAYS } from "../server/analytics";
+
+interface Props {
+  title: string;
+  formAction: string;
+  range: AnalyticsRange;
+  rangeError: string | null;
+  dbError: string | null;
+  bundle: AnalyticsBundle | null;
+}
+
+const { title, formAction, range, rangeError, dbError, bundle } = Astro.props;
+
+const maxCountry = bundle && bundle.byCountry.length > 0 ? Math.max(...bundle.byCountry.map((r) => r.clicks), 1) : 1;
+const maxDay = bundle && bundle.byDay.length > 0 ? Math.max(...bundle.byDay.map((r) => r.clicks), 1) : 1;
+---
+
+<section class="analytics">
+  <div class="toolbar">
+    <h1 style="margin:0">{title}</h1>
+    <a href="/">&larr; Links</a>
+  </div>
+
+  {
+    rangeError && (
+      <div class="banner banner--error" role="alert">
+        {rangeError === "bad_from" && "Invalid from date (use YYYY-MM-DD)."}
+        {rangeError === "bad_to" && "Invalid to date (use YYYY-MM-DD)."}
+        {rangeError === "from_after_to" && "From date must be on or before to date."}
+        {rangeError === "range_too_long" && `Range too long (max ${MAX_ANALYTICS_RANGE_DAYS} days).`}
+      </div>
+    )
+  }
+  {dbError && <div class="banner banner--error" role="alert">{dbError}</div>}
+
+  {
+    !dbError && (
+      <form class="card analytics__filters" method="get" action={formAction}>
+        <div class="analytics__row">
+          <div class="field" style="margin-bottom:0">
+            <label for="from">from (UTC)</label>
+            <input id="from" name="from" type="date" value={range.from} />
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label for="to">to (UTC, inclusive)</label>
+            <input id="to" name="to" type="date" value={range.to} />
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label for="human">traffic</label>
+            <select id="human" name="human">
+              <option value="0" selected={!range.humanOnly}>All (incl. bots)</option>
+              <option value="1" selected={range.humanOnly}>Humans only</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0; align-self:flex-end">
+            <button class="btn-primary" type="submit">Apply</button>
+          </div>
+        </div>
+      </form>
+    )
+  }
+
+  {
+    bundle && !dbError && !rangeError && (
+      <>
+        <div class="analytics__kpis">
+          <div class="card analytics__kpi">
+            <div class="label">Total clicks</div>
+            <div class="analytics__kpi-val">{bundle.totalClicks}</div>
+          </div>
+        </div>
+
+        <div class="card analytics__block">
+          <h2 class="analytics__h2">By day (UTC)</h2>
+          {bundle.byDay.length === 0 ? (
+            <p class="label" style="color:var(--secondary)">No clicks in this range.</p>
+          ) : (
+            <div class="analytics__daychart" role="img" aria-label="Clicks per day">
+              {bundle.byDay.map((d) => (
+                <div class="analytics__daycol" title={`${d.day}: ${d.clicks}`}>
+                  <div class="analytics__daybar" style={`height:${Math.round((d.clicks / maxDay) * 100)}%`} />
+                  <span class="analytics__daylbl">{d.day.slice(5)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div class="card analytics__block">
+          <h2 class="analytics__h2">Countries (R-010)</h2>
+          <p class="label" style="color:var(--secondary); margin-top:0">
+            Country-level only — no per-IP data. Unknown geo → <code>??</code>.
+          </p>
+          {bundle.byCountry.length === 0 ? (
+            <p class="label" style="color:var(--secondary)">No country data in this range.</p>
+          ) : (
+            <>
+              <div class="analytics__country-heat" data-country-map="1">
+                {bundle.byCountry.map((r) => (
+                  <div
+                    class="analytics__country-cell"
+                    style={`--intensity:${r.clicks / maxCountry}`}
+                    title={`${r.country_code}: ${r.clicks}`}
+                  >
+                    <span class="analytics__country-code">{r.country_code}</span>
+                    <span class="analytics__country-n">{r.clicks}</span>
+                  </div>
+                ))}
+              </div>
+              <table class="analytics__table">
+                <thead>
+                  <tr>
+                    <th>country</th>
+                    <th>clicks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bundle.byCountry.map((r) => (
+                    <tr>
+                      <td>{r.country_code}</td>
+                      <td>{r.clicks}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+        </div>
+
+        <div class="card analytics__block">
+          <h2 class="analytics__h2">Device type</h2>
+          {bundle.byDevice.length === 0 ? (
+            <p class="label" style="color:var(--secondary)">No data.</p>
+          ) : (
+            <table class="analytics__table">
+              <thead>
+                <tr>
+                  <th>device</th>
+                  <th>clicks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bundle.byDevice.map((r) => (
+                  <tr>
+                    <td>{r.label}</td>
+                    <td>{r.clicks}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div class="card analytics__block">
+          <h2 class="analytics__h2">Browser (top 15)</h2>
+          {bundle.byBrowser.length === 0 ? (
+            <p class="label" style="color:var(--secondary)">No browser data.</p>
+          ) : (
+            <table class="analytics__table">
+              <thead>
+                <tr>
+                  <th>browser</th>
+                  <th>clicks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bundle.byBrowser.map((r) => (
+                  <tr>
+                    <td>{r.label}</td>
+                    <td>{r.clicks}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </>
+    )
+  }
+</section>
+
+<style>
+  .analytics__filters {
+    margin-bottom: 16px;
+  }
+  .analytics__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
+  }
+  .analytics__kpis {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .analytics__kpi {
+    min-width: 140px;
+  }
+  .analytics__kpi-val {
+    font-size: 1.75rem;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .analytics__h2 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin: 0 0 12px;
+  }
+  .analytics__block {
+    margin-bottom: 16px;
+  }
+  .analytics__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  .analytics__table th {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--secondary);
+    text-align: left;
+    padding: 8px;
+    border-bottom: 1px solid var(--secondary);
+  }
+  .analytics__table td {
+    padding: 8px;
+    border-bottom: 1px solid #e8e9ea;
+  }
+  .analytics__daychart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 120px;
+    padding: 8px 0 24px;
+    overflow-x: auto;
+  }
+  .analytics__daycol {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 28px;
+    height: 100%;
+    flex: 1;
+  }
+  .analytics__daybar {
+    width: 100%;
+    max-width: 20px;
+    min-height: 2px;
+    background: var(--tertiary);
+    border-radius: 2px 2px 0 0;
+    margin-top: auto;
+  }
+  .analytics__daylbl {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.65rem;
+    color: var(--secondary);
+    margin-top: 4px;
+    writing-mode: horizontal-tb;
+  }
+  .analytics__country-heat {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .analytics__country-cell {
+    border: 1px solid #e8e9ea;
+    border-radius: 5px;
+    padding: 6px 4px;
+    text-align: center;
+    background: color-mix(in srgb, var(--tertiary) calc(var(--intensity) * 85%), var(--surface));
+  }
+  .analytics__country-code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    display: block;
+  }
+  .analytics__country-n {
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+</style>

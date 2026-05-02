@@ -1,0 +1,111 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { listUtmTemplates } from "../server/marketer";
+
+const err = Astro.url.searchParams.get("error");
+const errBanner =
+  err === "duplicate"
+    ? "A template with that name already exists."
+    : err === "invalid"
+      ? "Name is required (max 128 characters)."
+      : err === "missing"
+        ? "Missing id."
+        : null;
+
+const ok = Astro.url.searchParams.get("created") ? "Template saved." : null;
+const del = Astro.url.searchParams.get("deleted") ? "Template deleted." : null;
+
+let rows = [] as import("../server/marketer").UtmTemplateRow[];
+let dbBanner: string | null = null;
+try {
+  rows = await listUtmTemplates();
+} catch {
+  dbBanner = "Could not load UTM templates — run DB migrations (002) and check DATABASE_URL.";
+}
+---
+
+<Layout
+  title="UTM templates"
+  errorBanner={dbBanner ?? errBanner}
+  statusBanner={ok ?? del}
+  statusVariant={ok || del ? "ok" : null}
+>
+  <div class="toolbar">
+    <h1 style="margin:0">UTM templates</h1>
+    <div style="display:flex; gap:12px; align-items:center">
+      <a href="/">Links</a>
+      <a href="/tags">Tags</a>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <h2 style="margin-top:0; font-size:1.05rem">New template</h2>
+    <p class="label" style="margin:0 0 12px; color:var(--secondary)">
+      Named bundles merged into the destination URL on save (R-035). Empty fields are skipped.
+    </p>
+    <form method="post" action="/api/utm-template-create">
+      <div class="field">
+        <label for="name">name</label>
+        <input id="name" name="name" required maxlength="128" placeholder="newsletter-default" />
+      </div>
+      <div class="field">
+        <label for="utm_source">utm_source</label>
+        <input id="utm_source" name="utm_source" type="text" />
+      </div>
+      <div class="field">
+        <label for="utm_medium">utm_medium</label>
+        <input id="utm_medium" name="utm_medium" type="text" />
+      </div>
+      <div class="field">
+        <label for="utm_campaign">utm_campaign</label>
+        <input id="utm_campaign" name="utm_campaign" type="text" />
+      </div>
+      <div class="field">
+        <label for="utm_term">utm_term</label>
+        <input id="utm_term" name="utm_term" type="text" />
+      </div>
+      <div class="field">
+        <label for="utm_content">utm_content</label>
+        <input id="utm_content" name="utm_content" type="text" />
+      </div>
+      <button class="btn-primary" type="submit">Save template</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0; font-size:1.05rem">Saved templates</h2>
+    {
+      rows.length === 0 && !dbBanner && (
+        <p style="color:var(--secondary); margin:0">No templates yet.</p>
+      )
+    }
+    {
+      rows.map((t) => (
+        <div
+          style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; justify-content:space-between; padding:12px 0; border-top:1px solid #e8e9ea"
+        >
+          <div>
+            <div style="font-weight:500">{t.name}</div>
+            <div class="label" style="margin-top:6px; color:var(--secondary)">
+              {[
+                t.utm_source && `source=${t.utm_source}`,
+                t.utm_medium && `medium=${t.utm_medium}`,
+                t.utm_campaign && `campaign=${t.utm_campaign}`,
+                t.utm_term && `term=${t.utm_term}`,
+                t.utm_content && `content=${t.utm_content}`,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "—"}
+            </div>
+          </div>
+          <form method="post" action="/api/utm-template-delete" style="margin:0">
+            <input type="hidden" name="id" value={t.id} />
+            <button class="btn-plain" type="submit">
+              Delete
+            </button>
+          </form>
+        </div>
+      ))
+    }
+  </div>
+</Layout>

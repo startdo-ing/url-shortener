@@ -1,0 +1,52 @@
+---
+import { isAllowedSlugSegment } from "@url-shortener/core";
+import AnalyticsDashboard from "../../components/AnalyticsDashboard.astro";
+import Layout from "../../layouts/Layout.astro";
+import { getSlugAnalytics, parseAnalyticsSearchParams } from "../../server/analytics";
+import { getSql } from "../../server/db";
+
+let slug = Astro.params.slug ?? "";
+try {
+  slug = decodeURIComponent(slug);
+} catch {
+  return new Response(null, { status: 404 });
+}
+if (!isAllowedSlugSegment(slug)) {
+  return new Response(null, { status: 404 });
+}
+
+const parsed = parseAnalyticsSearchParams(Astro.url.searchParams);
+const fallback = parseAnalyticsSearchParams(new URLSearchParams());
+const range = parsed.ok ? parsed.range : fallback.ok ? fallback.range : { from: "", to: "", humanOnly: false };
+
+let rangeError: string | null = null;
+if (!parsed.ok) rangeError = parsed.error;
+
+let dbError: string | null = null;
+let bundle = null as import("../../server/analytics").AnalyticsBundle | null;
+
+if (parsed.ok) {
+  try {
+    const data = await getSlugAnalytics(getSql(), slug, parsed.range);
+    if (data === "unknown_slug") {
+      return new Response(null, { status: 404 });
+    }
+    bundle = data;
+  } catch {
+    dbError = "Could not load analytics — check DATABASE_URL and Postgres.";
+  }
+}
+
+const formAction = `/analytics/${encodeURIComponent(slug)}`;
+---
+
+<Layout title={`Analytics · ${slug}`}>
+  <AnalyticsDashboard
+    title={`Analytics · /${slug}`}
+    formAction={formAction}
+    range={range}
+    rangeError={rangeError}
+    dbError={dbError}
+    bundle={bundle}
+  />
+</Layout>

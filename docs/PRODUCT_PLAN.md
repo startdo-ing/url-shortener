@@ -6,6 +6,8 @@ This document is the **authoritative product and technical plan** for a single-t
 
 - Visual and UI rules: [design.md](../design.md) (must be followed for all portal UI).
 - Stack: Bun (redirect service), Astro + Svelte (portal SSR), PostgreSQL, optional Effect in shared/portal layers.
+- **Execution + production spine:** [PRODUCTION_PLAN.md](./PRODUCTION_PLAN.md) — maps these phases to vibe-coding `F-*` slices, spine files, and deploy checklist.
+- **Feature slice index:** [features/README.md](./features/README.md) — all `F-*` specs vs [§7 Phased delivery](#7-phased-delivery).
 
 ---
 

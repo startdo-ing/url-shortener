@@ -278,12 +278,66 @@ Pillar column: **1** = Fast dumb redirect · **2** = Forensic click signal · **
 
 ---
 
+### R-033 — Machine API for links (API keys)
+
+- **Priority:** Should *(Phase 4 — [PRODUCT_PLAN.md](./PRODUCT_PLAN.md) §7)*  
+- **Pillar:** 3  
+- **Statement:** Authorized clients authenticate with **API keys** (`Authorization: Bearer …`) issued by the portal and perform link CRUD and read aggregates on versioned **`/api/v1/*`** JSON routes on the **portal origin**; the redirect host remains **`GET /<slug>`** + **`/healthz`** only (**R-032**).
+
+- **Acceptance:**
+  - Given a missing or revoked key, When `POST /api/v1/links`, Then **`401`** JSON body with stable `{ "error": "unauthorized" }` (exact schema frozen in [F-009](./features/F-009-api-and-auth.md) at implement).
+  - Given valid key and body satisfying **R-005**, When create, Then persisted row matches portal parity rules in **F-009** contract.
+
+---
+
+### R-034 — In-app portal authentication (sessions)
+
+- **Priority:** Should *(Phase 4 — replaces or augments deployment-only gate when enabled)*  
+- **Pillar:** 3  
+- **Statement:** When enabled (env **`AUTH_MODE`** or equivalent **pinned in ARCHITECTURE** at ship), browser traffic to portal management routes requires an authenticated session in addition to optional API keys.
+
+- **Acceptance:**
+  - Given anonymous browser `GET /` while auth required, When no session, Then **`302`** to login route (path frozen in implement) without listing links in HTML.
+  - Given successful login, When `GET /`, Then listings render.
+
+---
+
+### R-035 — UTM presets
+
+- **Priority:** Should *(Phase 3 — [PRODUCT_PLAN.md](./PRODUCT_PLAN.md) §4.5)*  
+- **Pillar:** 3  
+- **Statement:** Operator defines named UTM parameter bundles and applies one on link create/update so the destination URL gains deterministic query parameters.
+
+- **Cross-refs:** [F-008](./features/F-008-marketer-utm-tags-qr.md).
+
+---
+
+### R-036 — Tags and search across links
+
+- **Priority:** Should  
+- **Pillar:** 3  
+- **Statement:** Operator assigns **tags** to links (many-to-many) and finds links via search over slug, destination, and tag names.
+
+- **Cross-refs:** [F-008](./features/F-008-marketer-utm-tags-qr.md).
+
+---
+
+### R-037 — QR artefact per link
+
+- **Priority:** Could  
+- **Pillar:** 3  
+- **Statement:** Each link exposes a deterministic **QR** resource (SVG **or** PNG — one format in v1 per **F-008** contract) encoding the canonical public short URL.
+
+- **Cross-refs:** [F-008](./features/F-008-marketer-utm-tags-qr.md).
+
+---
+
 ## Pillar coverage audit
 
 | Pillar | Must ids |
 |--------|----------|
 | 1 | R-001, R-002, R-003, R-004, R-005, R-006, R-032 |
 | 2 | R-007 (+ R-006 shared) |
-| 3 | R-020, R-021, R-022, R-023, R-024, R-025, R-027, R-028, R-031 (+ shared R-004,R-005) |
+| 3 | R-020, R-021, R-022, R-023, R-024, R-025, R-027, R-028, R-031 (+ shared R-004,R-005); phased **R-033–R-037** → [F-008](./features/F-008-marketer-utm-tags-qr.md) / [F-009](./features/F-009-api-and-auth.md) |
 
 Each pillar has ≥ one Must behavioral owner.

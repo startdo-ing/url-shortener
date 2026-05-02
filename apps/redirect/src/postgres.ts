@@ -1,4 +1,6 @@
 import postgres from "postgres";
+import { geoFieldsForIp, rawHeadersFromRequest, uaEnrichmentFields } from "./enrich-click";
+import { getCityReader } from "./geo-reader";
 import type { ClickInsert, LinkRow, RedirectDeps } from "./types";
 
 export function createPostgresDeps(
@@ -36,8 +38,8 @@ export function createPostgresDeps(
         expires_at: r.expires_at,
       };
     },
-    async insertClick(p: ClickInsert): Promise<void> {
-      await sql`
+    async insertClick(p: ClickInsert): Promise<number> {
+      const rows = await sql<{ id: string }[]>`
         INSERT INTO click_events (link_id, ip, referrer, user_agent, accept_language)
         VALUES (
           ${p.linkId}::uuid,
@@ -46,6 +48,35 @@ export function createPostgresDeps(
           ${p.userAgent},
           ${p.acceptLanguage}
         )
+        RETURNING id
+      `;
+      return Number(rows[0]!.id);
+    },
+    async enrichClick(clickId: number, requestHeaders: Headers): Promise<void> {
+      const rows = await sql<{ user_agent: string | null; ip: string | null }[]>`
+        SELECT user_agent, ip::text AS ip FROM click_events WHERE id = ${clickId} LIMIT 1
+      `;
+      const row = rows[0];
+      if (!row) return;
+
+      const ua = uaEnrichmentFields(row.user_agent);
+      const reader = await getCityReader();
+      const geo = await geoFieldsForIp(row.ip, reader);
+      const raw = rawHeadersFromRequest(requestHeaders);
+
+      await sql`
+        UPDATE click_events SET
+          browser = ${ua.browser},
+          os = ${ua.os},
+          device_type = ${ua.device_type},
+          is_bot = ${ua.is_bot},
+          country_code = ${geo?.country_code ?? null},
+          region = ${geo?.region ?? null},
+          city = ${geo?.city ?? null},
+          latitude = ${geo?.latitude ?? null},
+          longitude = ${geo?.longitude ?? null},
+          raw_headers = ${raw === null ? null : sql.json(raw)}
+        WHERE id = ${clickId}
       `;
     },
   };

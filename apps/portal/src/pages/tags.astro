@@ -1,0 +1,58 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { listTagsWithCounts } from "../server/marketer";
+
+const err = Astro.url.searchParams.get("error");
+const errBanner = err === "missing" ? "Missing id." : null;
+const del = Astro.url.searchParams.get("deleted") ? "Tag removed." : null;
+
+let rows = [] as import("../server/marketer").TagListRow[];
+let dbBanner: string | null = null;
+try {
+  rows = await listTagsWithCounts();
+} catch {
+  dbBanner = "Could not load tags — run DB migrations (002) and check DATABASE_URL.";
+}
+---
+
+<Layout title="Tags" errorBanner={dbBanner ?? errBanner} statusBanner={del} statusVariant={del ? "ok" : null}>
+  <div class="toolbar">
+    <h1 style="margin:0">Tags</h1>
+    <div style="display:flex; gap:12px; align-items:center">
+      <a href="/">Links</a>
+      <a href="/utm">UTM</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="label" style="margin:0 0 16px; color:var(--secondary)">
+      Tags are created when you save a link (comma-separated on create/edit). Search on the home list matches tag names
+      (R-036).
+    </p>
+    {
+      rows.length === 0 && !dbBanner && (
+        <p style="color:var(--secondary); margin:0">No tags yet — add some on a link.</p>
+      )
+    }
+    {
+      rows.map((t) => (
+        <div
+          style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; padding:10px 0; border-top:1px solid #e8e9ea"
+        >
+          <div>
+            <span class="tag-pill">{t.name}</span>
+            <span class="label" style="margin-left:8px; color:var(--secondary)">
+              {t.link_count} link{t.link_count === 1 ? "" : "s"}
+            </span>
+          </div>
+          <form method="post" action="/api/tag-delete" style="margin:0">
+            <input type="hidden" name="id" value={t.id} />
+            <button class="btn-plain" type="submit">
+              Delete tag
+            </button>
+          </form>
+        </div>
+      ))
+    }
+  </div>
+</Layout>

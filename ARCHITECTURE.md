@@ -4,6 +4,8 @@
 
 Baseline decision: **[ADR 0001](docs/adr/0001-monorepo-two-apps-postgres.md)** (monorepo, two Bun deployables, one Postgres).
 
+**Further ADRs:** [0002](docs/adr/0002-unfurl-fetch-ssrf-boundaries.md) (unfurl / SSRF), [0003](docs/adr/0003-click-enrichment-placement.md) (click enrichment), [0004](docs/adr/0004-notes-markdown-sanitization.md) (notes Markdown). **Feature index:** [docs/features/README.md](docs/features/README.md).
+
 ---
 
 ## Runtime shape (planned)

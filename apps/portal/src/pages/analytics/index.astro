@@ -1,0 +1,35 @@
+---
+import AnalyticsDashboard from "../../components/AnalyticsDashboard.astro";
+import Layout from "../../layouts/Layout.astro";
+import { getGlobalAnalytics, parseAnalyticsSearchParams } from "../../server/analytics";
+import { getSql } from "../../server/db";
+
+const parsed = parseAnalyticsSearchParams(Astro.url.searchParams);
+const fallback = parseAnalyticsSearchParams(new URLSearchParams());
+const range = parsed.ok ? parsed.range : fallback.ok ? fallback.range : { from: "", to: "", humanOnly: false };
+
+let rangeError: string | null = null;
+if (!parsed.ok) rangeError = parsed.error;
+
+let dbError: string | null = null;
+let bundle = null as import("../../server/analytics").AnalyticsBundle | null;
+
+if (parsed.ok) {
+  try {
+    bundle = await getGlobalAnalytics(getSql(), parsed.range);
+  } catch {
+    dbError = "Could not load analytics — check DATABASE_URL and Postgres.";
+  }
+}
+---
+
+<Layout title="Analytics · all links">
+  <AnalyticsDashboard
+    title="Analytics · all links"
+    formAction="/analytics"
+    range={range}
+    rangeError={rangeError}
+    dbError={dbError}
+    bundle={bundle}
+  />
+</Layout>

@@ -1,12 +1,16 @@
 ---
 import "../styles/global.css";
+import { authMode } from "../server/session-auth";
 
 interface Props {
   title: string;
   errorBanner?: string | null;
+  statusBanner?: string | null;
+  statusVariant?: "ok" | "warn" | null;
 }
 
-const { title, errorBanner } = Astro.props;
+const { title, errorBanner, statusBanner, statusVariant } = Astro.props;
+const sessionAuth = authMode() === "session";
 ---
 
 <!doctype html>
@@ -18,15 +22,46 @@ const { title, errorBanner } = Astro.props;
   </head>
   <body>
     <div class="page">
-      {errorBanner &&
-        (
-          <div class="banner banner--error" role="alert">
-            {errorBanner}
-          </div>
-        )}
+      {errorBanner && (
+        <div class="banner banner--error" role="alert">
+          {errorBanner}
+        </div>
+      )}
+      {statusBanner && (
+        <div
+          class:list={{
+            banner: true,
+            "banner--ok": statusVariant === "ok",
+            "banner--warn": statusVariant === "warn",
+          }}
+          role="status"
+        >
+          {statusBanner}
+        </div>
+      )}
       <slot />
       <footer class="label" style="margin-top: 48px; color: var(--secondary);">
-        Deployment-level access only · no in-app auth (see ARCHITECTURE)
+        <div style="display:flex; flex-wrap: wrap; gap: 12px; align-items: center">
+          <a href="/api-keys">API keys</a>
+          <span>·</span>
+          <span>
+            {sessionAuth ? "AUTH_MODE=session" : "AUTH_MODE=off (deploy-level gate)"}
+          </span>
+          {
+            sessionAuth && Astro.locals.authed && (
+              <form method="post" action="/api/logout" style="margin: 0; display: inline">
+                <button class="btn-plain" type="submit" style="padding: 0">
+                  Log out
+                </button>
+              </form>
+            )
+          }
+          {
+            sessionAuth && !Astro.locals.authed && (
+              <a href="/login">Log in</a>
+            )
+          }
+        </div>
       </footer>
     </div>
   </body>

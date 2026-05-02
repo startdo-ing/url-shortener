@@ -1,6 +1,11 @@
 ---
+import NotesModalRoot from "../components/NotesModalRoot.svelte";
 import Layout from "../layouts/Layout.astro";
+import { plainNotesExcerpt } from "../lib/render-notes";
 import { listLinks } from "../server/db";
+import { getTagsForLinkIds } from "../server/marketer";
+
+const q = Astro.url.searchParams.get("q");
 
 const flash = Astro.url.searchParams.get("deleted")
   ? "Link deleted."
@@ -10,21 +15,111 @@ const flash = Astro.url.searchParams.get("deleted")
       ? "Link updated."
       : null;
 
+const previewHome = Astro.url.searchParams.get("preview");
+const previewBanner =
+  previewHome === "ok"
+    ? "Preview refreshed."
+    : previewHome === "error"
+      ? "Preview fetch failed for that link."
+      : null;
+
 let rows = [] as import("../server/db").LinkRow[];
 let dbBanner: string | null = null;
+let tagMap = new Map<string, string[]>();
 
 try {
-  rows = await listLinks();
+  rows = await listLinks(q);
 } catch {
   dbBanner = "Could not load links — check DATABASE_URL and Postgres.";
 }
+
+try {
+  if (rows.length > 0) {
+    tagMap = await getTagsForLinkIds(rows.map((r) => r.id));
+  }
+} catch {
+  tagMap = new Map();
+}
+
+function hostFrom(urlStr: string): string {
+  try {
+    return new URL(urlStr).hostname;
+  } catch {
+    return urlStr;
+  }
+}
+
+function str(v: unknown): string | null {
+  return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
+}
+
+function previewTitle(r: import("../server/db").LinkRow): string {
+  const tp = r.target_preview;
+  const fromJson = tp && str(tp.title);
+  if (fromJson) return fromJson;
+  if (r.display_title?.trim()) return r.display_title.trim();
+  return hostFrom(r.destination_url);
+}
+
+function previewDesc(r: import("../server/db").LinkRow): string | null {
+  const tp = r.target_preview;
+  return tp ? str(tp.description) : null;
+}
+
+function previewSite(r: import("../server/db").LinkRow): string {
+  const tp = r.target_preview;
+  const sn = tp && str(tp.siteName);
+  return sn ?? hostFrom(r.destination_url);
+}
+
+function previewImg(r: import("../server/db").LinkRow): string | null {
+  const tp = r.target_preview;
+  const u = tp && str(tp.imageUrl);
+  if (u && u.startsWith("https://")) return u;
+  return null;
+}
+
+function notesB64(s: string): string {
+  return Buffer.from(s, "utf8").toString("base64");
+}
 ---
 
-<Layout title="Short links" errorBanner={dbBanner}>
+<Layout
+  title="Short links"
+  errorBanner={dbBanner}
+  statusBanner={previewBanner}
+  statusVariant={previewHome === "ok" ? "ok" : previewHome === "error" ? "warn" : null}
+>
   <div class="toolbar">
     <h1 style="margin:0">Links</h1>
-    <a href="/links/new" class="btn-primary">New link</a>
+    <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap">
+      <a href="/analytics">Analytics</a>
+      <a href="/links/bulk">Bulk</a>
+      <a href="/utm">UTM</a>
+      <a href="/tags">Tags</a>
+      <a href="/api-keys">API keys</a>
+      <a href="/links/new" class="btn-primary">New link</a>
+    </div>
   </div>
+  <form
+    method="get"
+    action="/"
+    style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px"
+  >
+    <label class="label" for="q" style="margin:0">Search</label>
+    <input
+      id="q"
+      name="q"
+      type="search"
+      placeholder="slug, destination, or tag"
+      value={q ?? ""}
+      style="max-width:min(100%, 320px); padding:8px; border:1px solid var(--secondary); border-radius:var(--rounded-md); font:inherit"
+    />
+    <button class="btn-plain" type="submit" style="padding:8px 12px; border:1px solid var(--secondary); border-radius:var(--rounded-md); text-decoration:none">
+      Search
+    </button>
+    {q && <a href="/">Clear</a>}
+  </form>
   {
     flash && (
       <div class="banner" role="status">
@@ -42,49 +137,78 @@ try {
   {
     rows.length > 0 && (
       <div class="card" style="padding:0; overflow:auto">
-        <table>
-          <thead>
-            <tr>
-              <th>slug</th>
-              <th>destination</th>
-              <th>status</th>
-              <th>redirect</th>
-              <th>notes</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr>
-                <td>{r.slug}</td>
-                <td class="truncate" title={r.destination_url}>{r.destination_url}</td>
-                <td>{r.status}</td>
-                <td>{r.redirect_type}</td>
-                <td>
-                  {r.notes_markdown?.trim() ? (
-                    <span class="note-excerpt">{r.notes_markdown.trim()}</span>
-                  ) : (
-                    <span class="label" style="color:var(--secondary)">
-                      —
-                    </span>
-                  )}
-                </td>
-                <td>
-                  <div class="row-actions">
-                    <a href={`/links/${r.id}/edit`}>Edit</a>
-                    <form style="margin:0" method="post" action="/api/delete-link">
-                      <input type="hidden" name="id" value={r.id} />
-                      <button class="btn-plain" type="submit">
-                        Delete
-                      </button>
-                    </form>
+        <div class="link-grid">
+          {rows.map((r) => (
+            <div class="link-card">
+              <div>
+                {previewImg(r) ? (
+                  <img
+                    class="link-card__thumb"
+                    src={previewImg(r)!}
+                    alt=""
+                    width="88"
+                    height="56"
+                    loading="lazy"
+                    referrerpolicy="no-referrer"
+                  />
+                ) : (
+                  <div class="link-card__thumb link-card__thumb--ph">No image</div>
+                )}
+              </div>
+              <div class="link-card__meta">
+                <div class="link-card__hostname">{previewSite(r)}</div>
+                <div class="link-card__title">{previewTitle(r)}</div>
+                {previewDesc(r) && <div class="link-card__desc">{previewDesc(r)}</div>}
+                {r.notes_markdown?.trim() && (
+                  <div class="note-block">
+                    <p class="note-excerpt note-excerpt-md">{plainNotesExcerpt(r.notes_markdown)}</p>
+                    <button
+                      type="button"
+                      class="btn-plain"
+                      data-notes-open
+                      data-notes-b64={notesB64(r.notes_markdown.trim())}
+                    >
+                      View full
+                    </button>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                )}
+                <div class="label" style="margin-top:6px">
+                  <span class="truncate" style="display:inline-block; max-width:100%" title={r.destination_url}>
+                    {r.slug} → {r.destination_url}
+                  </span>
+                  {" · "}
+                  {r.status} · {r.redirect_type}
+                </div>
+                {tagMap.get(r.id)?.length ? (
+                  <div class="tag-row">
+                    {tagMap.get(r.id)!.map((n) => (
+                      <span class="tag-pill">{n}</span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+              <div class="row-actions" style="flex-direction:column; align-items:flex-end">
+                <a href={`/analytics/${encodeURIComponent(r.slug)}`}>Stats</a>
+                <a href={`/links/${r.id}/edit`}>Edit</a>
+                <form style="margin:0" method="post" action="/api/link-preview">
+                  <input type="hidden" name="id" value={r.id} />
+                  <input type="hidden" name="return_to" value="home" />
+                  <button class="btn-plain" type="submit">
+                    Refresh preview
+                  </button>
+                </form>
+                <form style="margin:0" method="post" action="/api/delete-link">
+                  <input type="hidden" name="id" value={r.id} />
+                  <button class="btn-plain" type="submit">
+                    Delete
+                  </button>
+                </form>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
+  {rows.length > 0 && <NotesModalRoot client:load />}
 </Layout>

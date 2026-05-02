@@ -1,5 +1,8 @@
 import type { APIRoute } from "astro";
-import { updateLink } from "../../server/mutations";
+import { parseTagNamesInput } from "../../lib/tag-input";
+import { setLinkTags } from "../../server/marketer";
+import { parseExpiresAtForm, updateLink } from "../../server/mutations";
+import { applyUtmTemplateIfPresent } from "../../server/utm-apply";
 
 export const prerender = false;
 
@@ -15,7 +18,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     return redirect("/?error=missing_id", 303);
   }
 
-  const destination_url = String(form.get("destination_url") ?? "");
+  let destination_url = String(form.get("destination_url") ?? "");
+  destination_url = await applyUtmTemplateIfPresent(destination_url, String(form.get("utm_template_id") ?? ""));
   const redirect_type = Number(form.get("redirect_type")) === 301 ? 301 : 302;
   const statusRaw = form.get("status");
   const status = statusRaw === "paused" ? "paused" : "active";
@@ -26,6 +30,12 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const nm = read(form, "notes_markdown");
   const notes_markdown = nm?.trim() ? nm.trim() : null;
 
+  const expRaw = read(form, "expires_at");
+  const expParsed = parseExpiresAtForm(expRaw);
+  if (expParsed === "invalid") {
+    return redirect(`/links/${encodeURIComponent(id)}/edit?error=invalid_expires`, 303);
+  }
+
   const r = await updateLink({
     id,
     destination_url,
@@ -34,11 +44,15 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     status,
     display_title,
     notes_markdown,
+    expires_at: expParsed,
   });
 
   if (!r.ok) {
     return redirect(`/links/${encodeURIComponent(id)}/edit?error=${encodeURIComponent(r.code)}`, 303);
   }
+
+  const tags = parseTagNamesInput(String(form.get("tags") ?? ""));
+  await setLinkTags(id, tags);
 
   return redirect("/?updated=1", 303);
 };

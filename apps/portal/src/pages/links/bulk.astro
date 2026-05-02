@@ -1,0 +1,94 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+const sp = Astro.url.searchParams;
+const dry = sp.get("dry") === "1";
+const created = Number(sp.get("created") ?? "0");
+const skipped = Number(sp.get("skipped") ?? "0");
+const failed = Number(sp.get("failed") ?? "0");
+const wouldNew = Number(sp.get("new") ?? "0");
+const wouldDup = Number(sp.get("dup") ?? "0");
+const wouldBad = Number(sp.get("bad") ?? "0");
+const errsB64 = sp.get("errs");
+
+let errDownloadHref: string | null = null;
+let errTruncated = false;
+if (errsB64) {
+  try {
+    const raw = Buffer.from(errsB64, "base64url").toString("utf8");
+    if (raw.length > 12_000) errTruncated = true;
+    const slice = raw.slice(0, 12_000);
+    errDownloadHref = `data:text/tab-separated-values;charset=utf-8,${encodeURIComponent(slice)}`;
+  } catch {
+    errTruncated = true;
+  }
+}
+---
+
+<Layout title="Bulk import">
+  <div class="toolbar">
+    <h1 style="margin:0">Bulk import</h1>
+    <div style="display:flex; gap:12px; align-items:center">
+      <a href="/api/export-links-csv" download>Export CSV</a>
+      <a href="/api/export-links-json" download>Export JSON</a>
+      <a href="/">&larr; Links</a>
+    </div>
+  </div>
+
+  {
+    dry && (
+      <div class="banner" role="status">
+        <strong>Dry run</strong> — would create <strong>{wouldNew}</strong>, duplicate slug skip{" "}
+        <strong>{wouldDup}</strong>, invalid <strong>{wouldBad}</strong>.
+        {errDownloadHref && (
+          <>
+            {" "}
+            <a href={errDownloadHref} download="bulk-errors.tsv">
+              Download validation report (.tsv)
+            </a>
+            {errTruncated && <span class="label"> (truncated)</span>}
+          </>
+        )}
+      </div>
+    )
+  }
+
+  {
+    !dry && sp.has("created") && (
+      <div class="banner" role="status">
+        Import finished — created <strong>{created}</strong>, skipped <strong>{skipped}</strong>, failed{" "}
+        <strong>{failed}</strong>.
+        {errDownloadHref && (
+          <>
+            {" "}
+            <a href={errDownloadHref} download="bulk-import-report.tsv">
+              Download report (.tsv)
+            </a>
+            {errTruncated && <span class="label"> (truncated)</span>}
+          </>
+        )}
+      </div>
+    )
+  }
+
+  <div class="card">
+    <p class="label" style="color:var(--secondary); margin-top:0">
+      One URL per line. Optional second column: <strong>TAB</strong> or first <strong>comma</strong> then custom slug
+      (same rules as single create). Uses default <strong>302 / active</strong> for each row.
+    </p>
+    <form method="post" action="/api/bulk-links">
+      <div class="field">
+        <label for="csv">Paste</label>
+        <textarea id="csv" name="csv" rows={14} placeholder={"https://example.com\nhttps://a.org\tmy-slug"} />
+      </div>
+      <div style="display:flex; gap:12px; flex-wrap:wrap">
+        <button class="btn-plain" type="submit" name="mode" value="preview">
+          Validate (dry run)
+        </button>
+        <button class="btn-primary" type="submit" name="mode" value="commit">
+          Import
+        </button>
+      </div>
+    </form>
+  </div>
+</Layout>

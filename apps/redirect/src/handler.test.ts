@@ -11,7 +11,10 @@ async function flushMicrotasks(): Promise<void> {
 class FakeDeps implements RedirectDeps {
   links = new Map<string, LinkRow>();
   clicks: ClickInsert[] = [];
+  clickSeq = 0;
+  enrichCalls: { id: number; headers: Headers }[] = [];
   insertThrows = false;
+  enrichThrows = false;
   trustProxyHops = 0;
   frozen = new Date("2026-05-01T12:00:00.000Z");
 
@@ -34,9 +37,16 @@ class FakeDeps implements RedirectDeps {
     return this.links.get(slug) ?? null;
   }
 
-  async insertClick(p: ClickInsert): Promise<void> {
+  async insertClick(p: ClickInsert): Promise<number> {
     if (this.insertThrows) throw new Error("R-006 insert fail");
     this.clicks.push(p);
+    this.clickSeq += 1;
+    return this.clickSeq;
+  }
+
+  async enrichClick(id: number, requestHeaders: Headers): Promise<void> {
+    this.enrichCalls.push({ id, headers: new Headers(requestHeaders) });
+    if (this.enrichThrows) throw new Error("enrich fail");
   }
 }
 
@@ -179,6 +189,17 @@ describe("R-006 invariant — redirect not gated on insert", () => {
     expect(bad.status).toBe(good.status);
     expect(bad.headers.get("Location")).toBe(good.headers.get("Location"));
     await flushMicrotasks();
+    expect(d.enrichCalls.length).toBe(0);
+  });
+
+  test("R-006: enrich failure after insert does not change redirect", async () => {
+    d.insertThrows = false;
+    d.enrichThrows = true;
+    const res = await handleRedirectRequest(new Request("http://h/go"), "10.0.0.1", d);
+    expect(res.status).toBe(302);
+    await flushMicrotasks();
+    expect(d.clicks.length).toBe(1);
+    expect(d.enrichCalls.length).toBe(1);
   });
 });
 
@@ -206,6 +227,8 @@ describe("R-007 — click payload wiring", () => {
     expect(c.referrer).toBe("https://src.example/");
     expect(c.userAgent).toBe("TestBot/1.0");
     expect(c.acceptLanguage).toBe("en;q=0.9");
+    expect(d.enrichCalls.length).toBe(1);
+    expect(d.enrichCalls[0]?.id).toBe(1);
   });
 });
 

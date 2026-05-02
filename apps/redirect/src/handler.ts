@@ -12,12 +12,18 @@ function notFound(): Response {
 
 /**
  * Scheduled so redirect Response is constructed before persistence runs (**R-006**).
+ * Enrichment runs after insert (**ADR-0003**); failures are swallowed.
  */
-function scheduleInsertClick(deps: RedirectDeps, row: ClickInsert): void {
+function scheduleInsertClick(deps: RedirectDeps, row: ClickInsert, requestHeaders: Headers): void {
   queueMicrotask(() => {
-    void deps.insertClick(row).catch(() => {
-      /* R-006 — never propagate to caller */
-    });
+    void (async () => {
+      try {
+        const id = await deps.insertClick(row);
+        await deps.enrichClick(id, requestHeaders);
+      } catch {
+        /* R-006 — never propagate to caller */
+      }
+    })();
   });
 }
 
@@ -65,7 +71,7 @@ export async function handleRedirectRequest(req: Request, directIp: string | nul
     userAgent: req.headers.get("user-agent"),
     acceptLanguage: req.headers.get("accept-language"),
   };
-  scheduleInsertClick(deps, payload);
+  scheduleInsertClick(deps, payload, req.headers);
 
   return res;
 }

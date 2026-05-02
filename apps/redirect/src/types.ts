@@ -17,7 +17,9 @@ export type ClickInsert = {
 
 export interface RedirectDeps {
   findLinkBySlug(slug: string): Promise<LinkRow | null>;
-  insertClick(payload: ClickInsert): Promise<void>;
+  /** Returns `click_events.id` for async enrichment (ADR-0003). */
+  insertClick(payload: ClickInsert): Promise<number>;
+  enrichClick(clickId: number, requestHeaders: Headers): Promise<void>;
   now(): Date;
   trustProxyHops: number;
 }
