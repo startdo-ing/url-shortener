@@ -1,12 +1,8 @@
 import type { APIRoute } from "astro";
+import { exportLinksToCsv, type ExportLinkRow } from "../../server/export-format";
 import { getSql } from "../../server/db";
 
 export const prerender = false;
-
-function esc(s: string): string {
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
 
 export const GET: APIRoute = async () => {
   const sql = getSql();
@@ -31,22 +27,7 @@ export const GET: APIRoute = async () => {
     ORDER BY l.created_at DESC
   `;
 
-  const header = ["slug", "destination_url", "status", "redirect_type", "created_at", "updated_at", "click_count"];
-  const lines = [
-    header.join(","),
-    ...rows.map((r) =>
-      [
-        esc(r.slug),
-        esc(r.destination_url),
-        esc(r.status),
-        String(r.redirect_type),
-        esc(r.created_at.toISOString()),
-        esc(r.updated_at.toISOString()),
-        String(r.click_count),
-      ].join(","),
-    ),
-  ];
-  const body = lines.join("\n") + "\n";
+  const body = exportLinksToCsv(rows as ExportLinkRow[]);
 
   return new Response(body, {
     status: 200,

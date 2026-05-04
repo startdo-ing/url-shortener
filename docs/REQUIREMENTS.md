@@ -341,3 +341,43 @@ Pillar column: **1** = Fast dumb redirect · **2** = Forensic click signal · **
 | 3 | R-020, R-021, R-022, R-023, R-024, R-025, R-027, R-028, R-031 (+ shared R-004,R-005); phased **R-033–R-037** → [F-008](./features/F-008-marketer-utm-tags-qr.md) / [F-009](./features/F-009-api-and-auth.md) |
 
 Each pillar has ≥ one Must behavioral owner.
+
+---
+
+## Automated test traceability
+
+Paths are repo-relative. Run **`bun test`** at the workspace root.
+
+| Requirement | Primary unit tests (`bun:test`) | Notes |
+|---------------|----------------------------------|-------|
+| R-001 | `apps/redirect/src/handler.test.ts` | 301/302 + `Location` |
+| R-002 | `apps/redirect/src/handler.test.ts`, `packages/core/src/index.test.ts`, `apps/portal/src/server/analytics-bundle.test.ts` (unknown slug path) | No internal leak strings |
+| R-003 | `apps/redirect/src/handler.test.ts`, `packages/core/src/index.test.ts` | Malformed slug / segment rules |
+| R-004 | `apps/redirect/src/handler.test.ts` | Paused / expired → 404 |
+| R-005 | `packages/core/src/url.test.ts`, `apps/portal/src/server/mutations-preflight.test.ts` | Saves reject forbidden schemes |
+| R-006 | `apps/redirect/src/handler.test.ts` | Insert/enrich failures do not block redirect |
+| R-007 | `apps/redirect/src/handler.test.ts`, `apps/redirect/src/ip.test.ts` | IP + headers on insert; XFF derivation edge |
+| R-008 | `apps/redirect/src/enrich-click.test.ts` | UA/bot/geo fixtures (no live network) |
+| R-009 | `apps/portal/src/server/analytics-params.test.ts`, `apps/portal/src/server/analytics-bundle.test.ts` | Range parsing + mocked SQL bundle assembly |
+| R-010 | `apps/portal/src/server/analytics-params.test.ts` | `countryRollupToMap` |
+| R-011 | same as R-009 (`parseAnalyticsSearchParams`, `humanOnly` bundle parity) | |
+| R-020 | `packages/core/src/slug-input.test.ts`, `packages/core/src/slug-gen.test.ts`, `apps/portal/src/server/mutations-preflight.test.ts` | Custom + random slug grammar |
+| R-021 | `apps/portal/src/server/mutations-preflight.test.ts` (`postgresUniqueViolation`), `apps/portal/src/server/api-keys.ts` (uses shared helper for prefix collisions) | Full duplicate-slug UX still DB-backed outside unit scope |
+| R-022 | `apps/portal/src/server/mutations-preflight.test.ts` (`preflightUpdateLink`, `parseExpiresAtForm`) | Persistence path uses same validators |
+| R-023 | `apps/portal/src/server/requirements-fixtures.test.ts`, **`apps/portal/src/server/portal.integration.test.ts`** (opt-in) | Unit: `DELETE … RETURNING` in `mutations.ts`; **`bun run test:integration`** exercises v1 DELETE + follow-up GET 404 |
+| R-024 | `packages/core/src/ssrf-host.test.ts`, `packages/core/src/unfurl-meta.test.ts`, `apps/portal/src/server/unfurl-fetch.test.ts`, `apps/portal/src/server/link-preview-apply.test.ts` | |
+| R-025 | `apps/portal/src/server/requirements-fixtures.test.ts` | `listLinks` path avoids `fetch(` |
+| R-026 | `apps/portal/src/server/link-preview-apply.test.ts` | Refresh / apply pipeline with injected deps |
+| R-027 | `apps/portal/src/lib/render-notes.test.ts` | Markdown + sanitization |
+| R-028 | `apps/portal/src/lib/render-notes.test.ts` | Excerpt clamp |
+| R-029 | `apps/portal/src/lib/bulk-parse.test.ts` | |
+| R-030 | `apps/portal/src/server/export-format.test.ts` | Pure CSV/JSON shape from query rows |
+| R-031 | `apps/portal/src/server/requirements-fixtures.test.ts` | Token smoke on `design.md`; full UX is reviewer checklist |
+| R-032 | `apps/portal/src/server/requirements-fixtures.test.ts` | Doc anchor on architecture split |
+| R-033 | `apps/portal/src/server/v1-http.test.ts`, `apps/portal/src/server/api-key-crypto.test.ts`, `apps/portal/src/server/api-keys-shape.test.ts`, **`apps/portal/src/server/portal.integration.test.ts`** (opt-in) | **`bun run test:integration`**: missing bearer, **revoked key**, and happy-path create (**`DATABASE_URL`** required) |
+| R-034 | `apps/portal/src/server/session-gate.test.ts`, `apps/portal/src/middleware.ts`, **`apps/portal/src/server/portal.integration.test.ts`** (opt-in) | Unit: bypass paths; integration: Postgres session row lifecycle; **`302` login redirect** remains browser/middleware-shaped |
+| R-035 | `packages/core/src/utm-merge.test.ts` | |
+| R-036 | `apps/portal/src/lib/tag-input.test.ts` | Tag string parsing only; portal search SQL is integration-shaped |
+| R-037 | `apps/portal/src/server/qr-target.test.ts` | Target URL encoding + deterministic SVG opts (`qrcode`) |
+
+**Postgres integration (optional):** after applying migrations (`bun run db:migrate`), set **`DATABASE_URL`** and run **`bun run test:integration`** — see `apps/portal/src/server/portal.integration.test.ts` (**R-033**, **R-023**, **R-034** session persistence).

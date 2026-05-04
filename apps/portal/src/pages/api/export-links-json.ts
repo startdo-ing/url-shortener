@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { exportLinksToJson, type ExportLinkRow } from "../../server/export-format";
 import { getSql } from "../../server/db";
 
 export const prerender = false;
@@ -26,17 +27,9 @@ export const GET: APIRoute = async () => {
     ORDER BY l.created_at DESC
   `;
 
-  const payload = rows.map((r) => ({
-    slug: r.slug,
-    destination_url: r.destination_url,
-    status: r.status,
-    redirect_type: r.redirect_type,
-    created_at: r.created_at.toISOString(),
-    updated_at: r.updated_at.toISOString(),
-    click_count: r.click_count,
-  }));
+  const body = exportLinksToJson(rows as ExportLinkRow[]);
 
-  return new Response(JSON.stringify(payload, null, 2), {
+  return new Response(body, {
     status: 200,
     headers: {
       "content-type": "application/json; charset=utf-8",

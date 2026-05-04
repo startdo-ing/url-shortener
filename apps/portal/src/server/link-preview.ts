@@ -1,12 +1,22 @@
 import { extractTargetPreviewFromHtml } from "@url-shortener/core";
+import type { Sql } from "./db";
 import { getSql } from "./db";
 import { unfurlDestination } from "./unfurl-fetch";
 
+export type ApplyLinkPreviewFetchDeps = {
+  unfurl?: typeof unfurlDestination;
+  /** Test hook — defaults to `getSql()`. */
+  getSql?: () => Sql;
+};
+
+/** R-026 — operator-triggered preview refresh (**R-024**) updates `preview_fetched_at` (+ payload when OK). */
 export async function applyLinkPreviewFetch(
   id: string,
   fetchFn: typeof fetch,
+  deps: ApplyLinkPreviewFetchDeps = {},
 ): Promise<{ ok: true; unfurlOk: boolean } | { ok: false; reason: "not_found" }> {
-  const sql = getSql();
+  const unfurlFn = deps.unfurl ?? unfurlDestination;
+  const sql = deps.getSql?.() ?? getSql();
   const rows = await sql<
     {
       id: string;
@@ -20,7 +30,7 @@ export async function applyLinkPreviewFetch(
   if (!row) return { ok: false, reason: "not_found" };
 
   const now = new Date();
-  const r = await unfurlDestination(row.destination_url, fetchFn);
+  const r = await unfurlFn(row.destination_url, fetchFn);
 
   if (!r.ok) {
     await sql`

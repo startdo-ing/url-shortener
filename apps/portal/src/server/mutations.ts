@@ -4,7 +4,8 @@ import { getSql } from "./db";
 
 const PG_UNIQUE = "23505";
 
-function isUniqueViolation(e: unknown): boolean {
+/** Postgres `23505` — used by link slug and API key prefix uniqueness (**R-021**). */
+export function postgresUniqueViolation(e: unknown): boolean {
   return (
     typeof e === "object" &&
     e !== null &&
@@ -23,18 +24,6 @@ export type CreateLinkInput = {
   expires_at: Date | null;
 };
 
-/** Empty / missing → null; invalid string → `"invalid"`. */
-export function parseExpiresAtForm(raw: string | null | undefined): Date | null | "invalid" {
-  if (raw == null) return null;
-  const s = raw.trim();
-  if (s === "") return null;
-  const hasTz = /Z$/i.test(s) || /[+-]\d{2}:?\d{2}$/.test(s);
-  const normalized = hasTz ? s : `${s}Z`;
-  const d = new Date(normalized);
-  if (Number.isNaN(d.getTime())) return "invalid";
-  return d;
-}
-
 export type MutationErrorCode =
   | "invalid_destination"
   | "invalid_slug"
@@ -50,10 +39,51 @@ export type CreateLinkResult =
   | { ok: true; linkId: string }
   | { ok: false; code: MutationErrorCode };
 
-export async function createLink(input: CreateLinkInput): Promise<CreateLinkResult> {
+/** Validation shared by portal forms and `createLink` (**R-005**, **R-020**). */
+export function preflightCreateLink(input: CreateLinkInput): MutationErrorCode | null {
   const dest = validateDestinationUrl(input.destination_url);
-  if (!dest.ok) return { ok: false, code: "invalid_destination" };
-  if (notesMarkdownTooLarge(input.notes_markdown)) return { ok: false, code: "notes_too_large" };
+  if (!dest.ok) return "invalid_destination";
+  if (notesMarkdownTooLarge(input.notes_markdown)) return "notes_too_large";
+
+  const raw = (input.slugField ?? "").trim();
+  if (raw !== "") {
+    if (parseSlugInput(input.slugField) == null) return "invalid_slug";
+  }
+
+  return null;
+}
+
+export type UpdateLinkInput = CreateLinkInput & { id: string };
+
+/** Update path (**R-022**) always requires editable slug grammar. */
+export function preflightUpdateLink(input: UpdateLinkInput): MutationErrorCode | null {
+  const dest = validateDestinationUrl(input.destination_url);
+  if (!dest.ok) return "invalid_destination";
+  if (notesMarkdownTooLarge(input.notes_markdown)) return "notes_too_large";
+
+  if (parseSlugInput(input.slugField) == null) return "invalid_slug";
+
+  return null;
+}
+
+/** Empty / missing → null; invalid string → `"invalid"`. */
+export function parseExpiresAtForm(raw: string | null | undefined): Date | null | "invalid" {
+  if (raw == null) return null;
+  const s = raw.trim();
+  if (s === "") return null;
+  const hasTz = /Z$/i.test(s) || /[+-]\d{2}:?\d{2}$/.test(s);
+  const normalized = hasTz ? s : `${s}Z`;
+  const d = new Date(normalized);
+  if (Number.isNaN(d.getTime())) return "invalid";
+  return d;
+}
+
+export async function createLink(input: CreateLinkInput): Promise<CreateLinkResult> {
+  const pre = preflightCreateLink(input);
+  if (pre) return { ok: false, code: pre };
+
+  const vd = validateDestinationUrl(input.destination_url);
+  if (!vd.ok) return { ok: false, code: "invalid_destination" };
 
   const raw = (input.slugField ?? "").trim();
   let slug: string;
@@ -73,7 +103,7 @@ export async function createLink(input: CreateLinkInput): Promise<CreateLinkResu
         VALUES (
           ${crypto.randomUUID()}::uuid,
           ${slug},
-          ${dest.normalized},
+          ${vd.normalized},
           ${input.display_title},
           ${input.redirect_type},
           ${input.status},
@@ -84,7 +114,7 @@ export async function createLink(input: CreateLinkInput): Promise<CreateLinkResu
       `;
       return { ok: true, linkId: rows[0]!.id };
     } catch (e) {
-      if (isUniqueViolation(e)) return { ok: false, code: "duplicate_slug" };
+      if (postgresUniqueViolation(e)) return { ok: false, code: "duplicate_slug" };
       throw e;
     }
   }
@@ -100,7 +130,7 @@ export async function createLink(input: CreateLinkInput): Promise<CreateLinkResu
         VALUES (
           ${crypto.randomUUID()}::uuid,
           ${slug},
-          ${dest.normalized},
+          ${vd.normalized},
           ${input.display_title},
           ${input.redirect_type},
           ${input.status},
@@ -111,19 +141,19 @@ export async function createLink(input: CreateLinkInput): Promise<CreateLinkResu
       `;
       return { ok: true, linkId: rows[0]!.id };
     } catch (e) {
-      if (!isUniqueViolation(e)) throw e;
+      if (!postgresUniqueViolation(e)) throw e;
     }
   }
 
   return { ok: false, code: "duplicate_slug" };
 }
 
-export type UpdateLinkInput = CreateLinkInput & { id: string };
-
 export async function updateLink(input: UpdateLinkInput): Promise<MutationResult> {
-  const dest = validateDestinationUrl(input.destination_url);
-  if (!dest.ok) return { ok: false, code: "invalid_destination" };
-  if (notesMarkdownTooLarge(input.notes_markdown)) return { ok: false, code: "notes_too_large" };
+  const pre = preflightUpdateLink(input);
+  if (pre) return { ok: false, code: pre };
+
+  const vd = validateDestinationUrl(input.destination_url);
+  if (!vd.ok) return { ok: false, code: "invalid_destination" };
 
   const parsed = parseSlugInput(input.slugField);
   if (parsed == null) return { ok: false, code: "invalid_slug" };
@@ -134,7 +164,7 @@ export async function updateLink(input: UpdateLinkInput): Promise<MutationResult
     const rows = await sql<{ id: string }[]>`
       UPDATE links SET
         slug = ${parsed},
-        destination_url = ${dest.normalized},
+        destination_url = ${vd.normalized},
         display_title = ${input.display_title},
         redirect_type = ${input.redirect_type},
         status = ${input.status},
@@ -147,11 +177,12 @@ export async function updateLink(input: UpdateLinkInput): Promise<MutationResult
     if (rows.length === 0) return { ok: false, code: "invalid_slug" };
     return { ok: true };
   } catch (e) {
-    if (isUniqueViolation(e)) return { ok: false, code: "duplicate_slug" };
+    if (postgresUniqueViolation(e)) return { ok: false, code: "duplicate_slug" };
     throw e;
   }
 }
 
+/** R-023 — deletes row so redirect path sees unknown slug (**R-002**) thereafter. */
 export async function deleteLink(id: string): Promise<boolean> {
   const sql = getSql();
   const rows = await sql<{ id: string }[]>`

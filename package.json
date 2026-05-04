@@ -4,9 +4,14 @@
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "test": "bun test",
+    "test:integration": "bash -c 'test -n \"${DATABASE_URL:-}\" || { echo \"DATABASE_URL is required for integration tests\" >&2; exit 1; }; export RUN_INTEGRATION_TESTS=1; bun test apps/portal/src/server/portal.integration.test.ts'",
     "db:migrate": "bun run packages/db/scripts/migrate.ts",
+    "build": "bun run --cwd apps/portal build",
     "redirect": "bun run apps/redirect/src/server.ts",
+    "start:redirect": "bun run apps/redirect/src/server.ts",
     "portal": "bun run --cwd apps/portal dev",
-    "portal:build": "bun run --cwd apps/portal build"
+    "portal:build": "bun run --cwd apps/portal build",
+    "start:portal": "bun run --cwd apps/portal start",
+    "compose:up": "docker compose --env-file .env.docker up --build"
   }
 }

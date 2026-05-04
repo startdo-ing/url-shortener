@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from "astro";
+import { sessionAuthBypassPath } from "./server/session-gate";
 import { authMode, validateSession } from "./server/session-auth";
 
 export const onRequest: MiddlewareHandler = async (context, next) => {
@@ -11,14 +12,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     return next();
   }
 
-  if (
-    path.startsWith("/api/v1") ||
-    path === "/login" ||
-    path.startsWith("/login/") ||
-    path === "/api/login" ||
-    path === "/api/logout" ||
-    path.startsWith("/_astro/")
-  ) {
+  if (sessionAuthBypassPath(path)) {
     return next();
   }
 

@@ -1,9 +1,77 @@
+# Local / demo stack: Postgres + migrate (one-shot) + redirect + portal.
+#
+# Prerequisites:
+#   1. cp .env.docker.example .env.docker  (portal auth hash + tweak ports).
+#   2. Generate bcrypt hash once:
+#        bun -e 'console.log(await Bun.password.hash("YOUR_PASSWORD"))'
+#      Put it in PORTAL_AUTH_HASH inside .env.docker.
+#
+# Run:
+#   docker compose --env-file .env.docker up --build
+#
+# Migrate runs once before redirect + portal start (Compose v2.20+).
+
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: url_shortener
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.migrate
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/url_shortener
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  redirect:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.redirect
+    restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "${REDIRECT_PUBLISH_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/url_shortener
+      REDIRECT_RATE_LIMIT_ENABLED: "${REDIRECT_RATE_LIMIT_ENABLED:-true}"
+      REDIRECT_RATE_LIMIT_WINDOW_MS: "${REDIRECT_RATE_LIMIT_WINDOW_MS:-60000}"
+      REDIRECT_RATE_LIMIT_MAX: "${REDIRECT_RATE_LIMIT_MAX:-120}"
+      TRUST_PROXY_HOPS: "${TRUST_PROXY_HOPS:-0}"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  portal:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.portal
+    restart: unless-stopped
+    ports:
+      - "${PORTAL_PUBLISH_PORT:-4321}:4321"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/url_shortener
+      HOST: 0.0.0.0
+      PORT: 4321
+      AUTH_MODE: session
+      PORTAL_AUTH_HASH: ${PORTAL_AUTH_HASH}
+      PUBLIC_SHORT_BASE_URL: ${PUBLIC_SHORT_BASE_URL:-http://localhost:3000}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:

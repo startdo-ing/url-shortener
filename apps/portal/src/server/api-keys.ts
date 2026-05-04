@@ -1,5 +1,17 @@
 import { getSql } from "./db";
+import { postgresUniqueViolation } from "./mutations";
 import { generateApiKeyPlaintext, parseApiKeyBearer, sha256Hex, timingSafeEqualHex64 } from "./api-key-crypto";
+
+/** R-033 — `usk_<12hex>.<secret>` shape before Postgres lookup. */
+export function validateUskApiKeyBearer(authorization: string | null): { token: string; keyPrefix: string } | null {
+  const token = parseApiKeyBearer(authorization);
+  if (token == null || !token.startsWith("usk_")) return null;
+  const dot = token.indexOf(".", 4);
+  if (dot < 0) return null;
+  const keyPrefix = token.slice(4, dot);
+  if (keyPrefix.length !== 12 || !/^[a-f0-9]{12}$/.test(keyPrefix)) return null;
+  return { token, keyPrefix };
+}
 
 export type ApiKeyRow = {
   id: string;
@@ -11,12 +23,9 @@ export type ApiKeyRow = {
 };
 
 export async function verifyApiKeyFromAuthorization(authorization: string | null): Promise<boolean> {
-  const token = parseApiKeyBearer(authorization);
-  if (token == null || !token.startsWith("usk_")) return false;
-  const dot = token.indexOf(".", 4);
-  if (dot < 0) return false;
-  const keyPrefix = token.slice(4, dot);
-  if (keyPrefix.length !== 12 || !/^[a-f0-9]{12}$/.test(keyPrefix)) return false;
+  const parsed = validateUskApiKeyBearer(authorization);
+  if (parsed == null) return false;
+  const { token, keyPrefix } = parsed;
 
   const sql = getSql();
   const rows = await sql<Pick<ApiKeyRow, "key_hash">[]>`
@@ -52,9 +61,7 @@ export async function createApiKey(name: string): Promise<{ plaintext: string; i
       `;
       return { plaintext, id: rows[0]!.id, key_prefix: keyPrefix };
     } catch (e: unknown) {
-      if (typeof e === "object" && e !== null && "code" in e && (e as { code?: string }).code === "23505") {
-        continue;
-      }
+      if (postgresUniqueViolation(e)) continue;
       throw e;
     }
   }

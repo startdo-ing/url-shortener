@@ -1,15 +1,9 @@
 import type { APIRoute } from "astro";
 import QRCode from "qrcode";
 import { getLinkById } from "../../../../server/db";
+import { QR_SVG_THEME, shortUrlForSlug } from "../../../../server/qr-target";
 
 export const prerender = false;
-
-function shortUrlForSlug(slug: string): string | null {
-  const raw = import.meta.env.PUBLIC_SHORT_BASE_URL;
-  if (raw == null || String(raw).trim() === "") return null;
-  const base = String(raw).replace(/\/$/, "");
-  return `${base}/${encodeURIComponent(slug)}`;
-}
 
 export const GET: APIRoute = async ({ params }) => {
   const id = params.id;
@@ -18,7 +12,8 @@ export const GET: APIRoute = async ({ params }) => {
   const row = await getLinkById(id);
   if (!row) return new Response("Not found", { status: 404 });
 
-  const target = shortUrlForSlug(row.slug);
+  const base = import.meta.env.PUBLIC_SHORT_BASE_URL as string | undefined;
+  const target = shortUrlForSlug(base, row.slug);
   if (!target) {
     return new Response("PUBLIC_SHORT_BASE_URL is not set", {
       status: 503,
@@ -28,8 +23,8 @@ export const GET: APIRoute = async ({ params }) => {
 
   const svg = await QRCode.toString(target, {
     type: "svg",
-    margin: 1,
-    color: { dark: "#0F1112", light: "#FFFFFF" },
+    margin: QR_SVG_THEME.margin,
+    color: { ...QR_SVG_THEME.color },
   });
 
   return new Response(svg, {
