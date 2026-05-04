@@ -4,6 +4,8 @@ WORKDIR /app
 # Install dependencies
 FROM base AS deps
 COPY package.json bun.lock* ./
+COPY packages/shared-db/package.json packages/shared-db/package.json
+COPY apps/redirect-service/package.json apps/redirect-service/package.json
 RUN bun install --frozen-lockfile
 
 # Production image
