@@ -1,0 +1,16 @@
+{
+  "name": "@url-shortener/shared-db",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./schema": "./schema.ts",
+    "./client": "./client.ts"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.0"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.43.0"
+  }
+}

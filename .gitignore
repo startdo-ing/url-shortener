@@ -1,0 +1,9 @@
+node_modules/
+.env
+.env.docker
+.env.local
+*.log
+dist/
+apps/portal/dist/
+apps/portal/.astro/
+.DS_Store

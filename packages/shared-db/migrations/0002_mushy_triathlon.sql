@@ -1,0 +1,1 @@
+ALTER TABLE `short_links` ADD `password_hash` text;

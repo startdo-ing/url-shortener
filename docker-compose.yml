@@ -1,0 +1,37 @@
+services:
+  management-web:
+    build:
+      context: .
+      dockerfile: apps/management-web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3915:3000"
+    volumes:
+      - db-data:/data
+    env_file:
+      - .env
+    environment:
+      - DATABASE_PATH=/data/db.sqlite
+      - NODE_ENV=production
+    depends_on:
+      redirect-service:
+        condition: service_started
+
+  redirect-service:
+    build:
+      context: .
+      dockerfile: apps/redirect-service/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8915:8000"
+    volumes:
+      - db-data:/data
+    env_file:
+      - .env
+    environment:
+      - DATABASE_PATH=/data/db.sqlite
+      - NODE_ENV=production
+
+volumes:
+  db-data:
+    driver: local
