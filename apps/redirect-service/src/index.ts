@@ -7,6 +7,10 @@ import {
 import type { Db } from "@url-shortener/shared-db/client"
 import { eq, and } from "drizzle-orm"
 
+import { logger } from "./logger.ts"
+import { getMetricsText, incrementCounter } from "./metrics.ts"
+import { rateLimiter } from "./rate-limiter.ts"
+
 const DATABASE_PATH = Bun.env.DATABASE_PATH ?? "./dev.sqlite"
 const PORT = Number(Bun.env.PORT ?? 8000)
 const SLUG_PATTERN = /^[A-Za-z0-9_-]+$/
@@ -14,17 +18,57 @@ const SLUG_PATTERN = /^[A-Za-z0-9_-]+$/
 if (import.meta.main) {
 	const db = createDb(DATABASE_PATH)
 
+	// Prune stale rate-limit entries every 5 minutes
+	setInterval(() => rateLimiter.prune(), 5 * 60_000)
+
 	Bun.serve({
 		port: PORT,
-		fetch(req: Request) {
-			return handleRedirectRequest(req, db)
+		async fetch(req: Request) {
+			const url = new URL(req.url)
+
+			// Metrics endpoint — unauthenticated, internal use only
+			if (req.method === "GET" && url.pathname === "/metrics") {
+				return new Response(getMetricsText(), {
+					headers: { "Content-Type": "text/plain; version=0.0.4" }
+				})
+			}
+
+			const start = Date.now()
+			const response = await handleRedirectRequest(req, db)
+			const duration = Date.now() - start
+
+			logger.info("request", {
+				method: req.method,
+				path: url.pathname,
+				host: url.hostname,
+				status: response.status,
+				durationMs: duration
+			})
+
+			incrementCounter("http_requests_total", {
+				service: "redirect-service",
+				method: req.method,
+				status: String(response.status)
+			})
+
+			return response
 		}
 	})
 
-	console.log(`redirect-service running on port ${PORT}`)
+	logger.info("started", { port: PORT })
 }
 
-export async function handleRedirectRequest(req: Request, db: Db) {
+import type { RateLimiterOptions } from "./rate-limiter.ts"
+import {
+	createRateLimiter,
+	rateLimiter as defaultRateLimiter
+} from "./rate-limiter.ts"
+
+export async function handleRedirectRequest(
+	req: Request,
+	db: Db,
+	limiter = defaultRateLimiter
+) {
 	const url = new URL(req.url)
 	const host = url.hostname
 	const rawSlug = url.pathname.replace(/^\//, "")
@@ -43,6 +87,18 @@ export async function handleRedirectRequest(req: Request, db: Db) {
 	if (!slug) return new Response("Not Found", { status: 404 })
 	if (!SLUG_PATTERN.test(slug))
 		return new Response("Invalid slug format", { status: 400 })
+
+	// Rate limiting by IP
+	const ip =
+		req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+		req.headers.get("x-real-ip") ??
+		"unknown"
+	if (!limiter.isAllowed(ip)) {
+		return new Response("Too Many Requests", {
+			status: 429,
+			headers: { "Retry-After": "60" }
+		})
+	}
 
 	// Resolve active domain
 	const domain = await db.query.domains.findFirst({

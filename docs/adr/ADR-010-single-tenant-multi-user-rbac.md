@@ -17,6 +17,18 @@ Authorization model:
 - admin: manage users, roles, and all dashboard operations.
 - member: manage links/domains and view analytics, but cannot manage users.
 
+Permission mapping:
+- `dashboard:view`: admin, member
+- `links:manage`: admin, member
+- `domains:manage`: admin, member
+- `analytics:view`: admin, member
+- `users:manage`: admin only
+
+Keycloak role naming contract:
+- `url-shortener-admin` is the reserved external role name for local `admin`.
+- `url-shortener-member` is the reserved external role name for local `member`.
+- The current milestone does not auto-sync those roles into existing local users; local authorization remains the source of truth until a later sync policy is implemented.
+
 First account initialization:
 - If no local users exist, first successful SSO login can complete setup onboarding and is assigned admin.
 - After first admin is created, onboarding route is disabled for normal access.

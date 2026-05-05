@@ -13,14 +13,15 @@ Use Keycloak as the identity provider for management-web via OIDC (OpenID Connec
 
 Scope:
 - management-web authenticates users through Keycloak OIDC flow.
-- Keycloak manages user sessions, tokens, and roles.
+- Keycloak manages the upstream identity session and OIDC tokens.
 - redirect-service does not require authentication (public hot path).
 
 Integration approach:
 - Use OIDC authorization code flow (server-side, Remix loaders).
-- Store access/refresh tokens in secure server-side session.
-- Use Keycloak roles/groups to model permissions (admin, member).
-- Validate tokens on every protected request.
+- Store the authenticated local viewer in a secure server-side session after a successful callback.
+- Keep the local `users` table as the authorization source of truth for `admin` and `member`.
+- Reserve Keycloak role names `url-shortener-admin` and `url-shortener-member` for future claim-to-role mapping, but do not auto-sync them into existing local users in the current milestone.
+- Validate protected requests against the local session plus the local user's active state.
 
 Keycloak instance:
 - URL: https://auth.startdo.ing
@@ -36,13 +37,13 @@ Keycloak realm and client:
 Positive:
 - No custom password management or session security implementation needed.
 - SSO across the ecosystem for free.
-- Roles, groups, and policies managed centrally.
+- Identity stays centralized while app authorization remains explicit and auditable in the local database.
 - OIDC is a stable, auditable standard.
 
 Negative:
 - Keycloak availability is now a dependency of the dashboard.
 - Local dev requires either a local Keycloak instance or mock OIDC provider.
-- Token expiry and refresh handling must be implemented correctly.
+- Any future Keycloak role sync must avoid silently overriding local admin/user-management decisions.
 
 ## Alternatives Considered
 1. Custom auth with password + session

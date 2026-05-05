@@ -1,0 +1,19 @@
+{
+	"name": "management-web",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "bun --watch server.ts",
+		"start": "bun run server.ts",
+		"test": "bun test",
+		"typecheck": "tsgo -p tsconfig.json --noEmit"
+	},
+	"dependencies": {
+		"@url-shortener/shared-db": "workspace:*",
+		"drizzle-orm": "^0.43.0",
+		"remix": "next"
+	},
+	"devDependencies": {
+		"@types/node": "^24.3.0"
+	}
+}

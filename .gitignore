@@ -7,3 +7,6 @@ dist/
 apps/portal/dist/
 apps/portal/.astro/
 .DS_Store
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

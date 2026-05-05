@@ -3,6 +3,11 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "scripts": {
+    "migrate": "bun run ./migrate.ts",
+    "backup": "bun run ./backup.ts",
+    "studio": "bunx drizzle-kit studio"
+  },
   "exports": {
     "./schema": "./schema.ts",
     "./client": "./client.ts"

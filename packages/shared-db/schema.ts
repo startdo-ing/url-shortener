@@ -27,19 +27,35 @@ export const users = sqliteTable(
 	(t) => [check("chk_users_role", sql`${t.role} in ('admin', 'member')`)]
 )
 
-export const domains = sqliteTable("domains", {
-	id: text("id").primaryKey(),
-	host: text("host").notNull().unique(),
-	isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-	isPrimary: integer("is_primary", { mode: "boolean" })
-		.notNull()
-		.default(false),
-	createdBy: text("created_by")
-		.notNull()
-		.references(() => users.id),
-	createdAt: text("created_at").notNull().default(now),
-	updatedAt: text("updated_at").notNull().default(now)
-})
+export const domains = sqliteTable(
+	"domains",
+	{
+		id: text("id").primaryKey(),
+		host: text("host").notNull().unique(),
+		isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+		isPrimary: integer("is_primary", { mode: "boolean" })
+			.notNull()
+			.default(false),
+		createdBy: text("created_by")
+			.notNull()
+			.references(() => users.id),
+		createdAt: text("created_at").notNull().default(now),
+		updatedAt: text("updated_at").notNull().default(now),
+		verificationStatus: text("verification_status", {
+			enum: ["pending", "verified", "failed"]
+		})
+			.notNull()
+			.default("pending"),
+		verificationError: text("verification_error"),
+		verificationCheckedAt: text("verification_checked_at")
+	},
+	(t) => [
+		check(
+			"chk_domains_verification_status",
+			sql`${t.verificationStatus} in ('pending', 'verified', 'failed')`
+		)
+	]
+)
 
 export const shortLinks = sqliteTable(
 	"short_links",

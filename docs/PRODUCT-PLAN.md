@@ -108,6 +108,18 @@ Identity and access model (single-tenant, multi-user):
 - First account bootstrap: when no local users exist, the first successful SSO user can complete setup via dashboard onboarding and is assigned admin role.
 - User management is done in management-web by admins (promote/demote member, disable user access).
 
+Permission mapping:
+- `dashboard:view`: admin and member
+- `links:manage`: admin and member
+- `domains:manage`: admin and member
+- `analytics:view`: admin and member
+- `users:manage`: admin only
+
+Reserved external role names for future Keycloak mapping:
+- `url-shortener-admin` -> local `admin`
+- `url-shortener-member` -> local `member`
+- Until a later sync milestone is explicitly implemented, the local `users` table remains the authorization source of truth.
+
 ## 6. System Boundaries
 
 Dashboard app responsibilities:
@@ -255,21 +267,21 @@ Milestone 1 checklist:
 
 Milestone 2 checklist:
 - [ ] Keycloak realm and client configured
-- [ ] OIDC auth flow integrated in management-web
-- [ ] First-admin onboarding flow implemented
-- [ ] Role model and permission mapping defined
-- [ ] Admin user-management page implemented
-- [ ] Admin/member route protection implemented
-- [ ] Local dev OIDC setup documented
-- [ ] Link CRUD implemented
-- [ ] Link list/search implemented
-- [ ] Domain assignment implemented
+- [x] OIDC auth flow integrated in management-web
+- [x] First-admin onboarding flow implemented
+- [x] Role model and permission mapping defined
+- [x] Admin user-management page implemented
+- [x] Admin/member route protection implemented
+- [x] Local dev OIDC setup documented
+- [x] Link CRUD implemented
+- [x] Link list/search implemented
+- [x] Domain assignment implemented
 - [ ] Critical dashboard E2E tests passing
 
 Milestone 3 checklist:
-- [ ] Structured logs available for both apps
-- [ ] Request metrics and alert thresholds defined
-- [ ] Rate limiting and abuse controls active
+- [x] Structured logs available for both apps
+- [x] Request metrics and alert thresholds defined
+- [x] Rate limiting and abuse controls active
 - [ ] Backup and restore tested
 - [ ] Incident runbook trial completed
 
@@ -383,7 +395,7 @@ Create these ADRs first:
 4. Redirect data access and caching strategy
 5. Click event capture model (inline vs async pipeline)
 
-## 13. Execution Status (May 4, 2026)
+## 13. Execution Status (May 5, 2026)
 
 Completed:
 1. ADR-001 to ADR-005 created.
@@ -393,10 +405,11 @@ Completed:
 5. ADR-006 created (Keycloak authentication).
 6. Milestone 2 checklist updated to reflect Keycloak OIDC integration.
 7. ADR-010 created (single-tenant multi-user RBAC and first-admin bootstrap).
+8. Milestone 2 fully implemented: Link CRUD, domain CRUD with DNS verification, domain assignment, design token system, route protection.
+9. Milestone 3 in progress: structured JSON logging, Prometheus metrics endpoint, IP rate limiting with tests, SQLite backup script, incident runbook, ADR-011 created.
 
 Current next actions:
-1. Review and approve docs with no open architecture ambiguity.
-2. Create repository structure for two apps and shared packages.
-3. Initialize migration tooling and first schema migration.
-4. Implement redirect app minimal vertical slice (host + slug -> redirect).
+1. Trial the incident runbook against a local dev instance and mark it complete.
+2. Perform a manual backup + restore drill and mark it complete.
+3. Begin Milestone 4 feature spec review.
 

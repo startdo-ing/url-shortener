@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test"
 import type { Db } from "@url-shortener/shared-db/client"
-import { handleRedirectRequest } from "./index"
+import { handleRedirectRequest } from "./index.ts"
+import { createRateLimiter } from "./rate-limiter.ts"
 
 type MockDomain = { id: string }
 type MockLink = {
@@ -106,5 +107,18 @@ describe("handleRedirectRequest", () => {
 
 		expect(res.status).toBe(302)
 		expect(res.headers.get("location")).toBe("https://example.com")
+	})
+
+	it("returns 429 when the IP rate limit is exceeded", async () => {
+		const limiter = createRateLimiter({ maxRequests: 2, windowMs: 60_000 })
+		const db = createMockDb({ domain: { id: "domain_1" }, link: activeLink })
+		const req = () =>
+			new Request("https://c.anh.pw/abc123", {
+				headers: { "x-forwarded-for": "10.0.0.1" }
+			})
+
+		expect((await handleRedirectRequest(req(), db, limiter)).status).toBe(302)
+		expect((await handleRedirectRequest(req(), db, limiter)).status).toBe(302)
+		expect((await handleRedirectRequest(req(), db, limiter)).status).toBe(429)
 	})
 })

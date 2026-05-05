@@ -19,9 +19,9 @@ import { shortLinks, domains } from '@url-shortener/shared-db/schema'
 ## Commands
 
 ```bash
-# Run migrations
-bunx drizzle-kit migrate
+# Run migrations with Bun SQLite
+DATABASE_PATH=./dev.sqlite bun run migrate
 
 # Open Drizzle Studio (local DB browser)
-bunx drizzle-kit studio
+bun run studio
 ```
