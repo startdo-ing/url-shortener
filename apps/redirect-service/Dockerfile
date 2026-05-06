@@ -1,22 +1,10 @@
-FROM oven/bun:latest AS base
-WORKDIR /app
-
-# Install dependencies
-FROM base AS deps
-COPY package.json bun.lock* ./
-COPY apps/management-web/package.json apps/management-web/package.json
-COPY packages/shared-db/package.json packages/shared-db/package.json
-COPY apps/redirect-service/package.json apps/redirect-service/package.json
-RUN bun install --frozen-lockfile
-
-# Production image
-FROM oven/bun:latest AS runner
+FROM oven/bun:latest
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN bun install --frozen-lockfile
 
 WORKDIR /app/apps/redirect-service
 
