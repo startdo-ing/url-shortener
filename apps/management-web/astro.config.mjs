@@ -6,6 +6,9 @@ export default defineConfig({
 	output: "server",
 	adapter: node({ mode: "standalone" }),
 	integrations: [svelte()],
+	security: {
+		checkOrigin: false
+	},
 	vite: {
 		ssr: {
 			// bun:sqlite is a Bun-native protocol; externalize so Vite uses
