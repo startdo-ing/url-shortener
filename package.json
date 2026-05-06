@@ -21,5 +21,5 @@
 		"test": "cd apps/redirect-service && bun test --pass-with-no-tests && cd ../management-web-astro && bun test --pass-with-no-tests",
 		"check-all": "bun run format && bun run lint && bun run typecheck && bun run test"
 	},
-	"workspaces": ["apps/*", "packages/*"]
+	"workspaces": ["apps/management-web-astro", "apps/redirect-service", "packages/*"]
 }
