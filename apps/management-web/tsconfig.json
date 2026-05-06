@@ -1,8 +1,7 @@
 {
+  "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
-    "strict": true,
-    "lib": ["ES2024", "DOM", "DOM.Iterable"],
-    "types": ["bun", "node"],
+    "types": ["astro/client", "bun", "node"],
     "module": "ES2022",
     "moduleResolution": "Bundler",
     "target": "ESNext",
@@ -10,9 +9,8 @@
     "rewriteRelativeImportExtensions": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "remix/ui",
     "noEmit": true
   },
+  "include": [".astro/types.d.ts", "src/**/*", "astro.config.mjs"],
   "exclude": ["dist"]
 }

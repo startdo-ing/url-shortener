@@ -4,7 +4,7 @@ interface LogMetadata {
 	[key: string]: unknown
 }
 
-const service = "management-web-astro"
+const service = "management-web"
 
 function write(level: LogLevel, message: string, metadata: LogMetadata = {}) {
 	const entry = {

@@ -48,7 +48,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 		durationMs
 	})
 	incrementCounter("http_requests_total", {
-		service: "management-web-astro",
+		service: "management-web",
 		method: request.method,
 		status: String(response.status)
 	})

@@ -20,7 +20,7 @@ export function getMetricsText() {
 
 	if (counters.size === 0) {
 		lines.push(
-			'http_requests_total{service="management-web-astro",method="GET",status="200"} 0'
+			'http_requests_total{service="management-web",method="GET",status="200"} 0'
 		)
 	}
 

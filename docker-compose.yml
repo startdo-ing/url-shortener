@@ -1,8 +1,8 @@
 services:
-  management-web-astro:
+  management-web:
     build:
       context: .
-      dockerfile: apps/management-web-astro/Dockerfile
+      dockerfile: apps/management-web/Dockerfile
     restart: unless-stopped
     ports:
       - "3916:3000"

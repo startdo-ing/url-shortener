@@ -1,8 +1,5 @@
 # Management Web Astro Parity Checklist
 
-This checklist is the migration gate for replacing `apps/management-web`.
-Do not cut over until every implemented Remix feature is mirrored in `apps/management-web-astro`.
-
 ## Route Contract
 
 - [x] `GET /`
