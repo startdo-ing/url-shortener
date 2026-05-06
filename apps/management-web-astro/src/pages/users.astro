@@ -1,0 +1,24 @@
+---
+import Layout from "../components/Layout.astro"
+import FlashBanners from "../components/ui/FlashBanners.astro"
+import UsersTable from "../components/users/UsersTable.astro"
+import { loadPageContext } from "../lib/page"
+import { listUsers } from "../lib/models/user"
+
+const [{ viewer, error, notice }, users] = await Promise.all([
+	loadPageContext(Astro.request, Astro.response),
+	listUsers()
+])
+---
+
+<Layout title="Users" viewer={viewer}>
+	<section>
+		<h1>User Management</h1>
+		<FlashBanners error={error} notice={notice} />
+		<p>
+			Admins can promote, demote, and enable or disable local dashboard access.
+			Keycloak remains the authentication source.
+		</p>
+		<UsersTable users={users} viewerId={viewer?.id} />
+	</section>
+</Layout>

@@ -1,0 +1,44 @@
+---
+import Layout from "../../components/Layout.astro"
+import { FLASH_ERROR_KEY, FLASH_NOTICE_KEY } from "../../lib/auth/constants"
+import {
+	pullFlash,
+	readSession,
+	setSessionCookie
+} from "../../lib/auth/session"
+
+const session = readSession(Astro.request)
+const pending = session.pendingBootstrap
+const errorMessage = pullFlash(session, FLASH_ERROR_KEY)
+const noticeMessage = pullFlash(session, FLASH_NOTICE_KEY)
+
+if (errorMessage || noticeMessage) {
+	Astro.response.headers.set("Set-Cookie", setSessionCookie(session))
+}
+---
+
+<Layout title="First Admin Setup">
+	<section>
+		<h1>First Admin Setup</h1>
+		{noticeMessage ? <p class="banner banner--notice">{noticeMessage}</p> : null}
+		{errorMessage ? <p class="banner banner--error">{errorMessage}</p> : null}
+
+		{pending ? (
+			<>
+				<p>
+					No local users exist yet. Claim the first admin account for{" "}
+					{pending.displayName ?? pending.email}.
+				</p>
+				<p>This action is available only until the first local admin user is created.</p>
+				<form method="post" action="/setup/first-admin">
+					<button type="submit">Create the first admin account</button>
+				</form>
+				<form method="post" action="/auth/logout">
+					<button type="submit">Cancel and sign out</button>
+				</form>
+			</>
+		) : (
+			<p>Sign in with Keycloak first, then return to this page.</p>
+		)}
+	</section>
+</Layout>

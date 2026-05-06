@@ -1,0 +1,11 @@
+---
+interface Props {
+	error?: string | null
+	notice?: string | null
+}
+
+const { error, notice } = Astro.props
+---
+
+{notice ? <p class="banner banner--notice">{notice}</p> : null}
+{error ? <p class="banner banner--error">{error}</p> : null}

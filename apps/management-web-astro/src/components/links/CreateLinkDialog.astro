@@ -1,0 +1,113 @@
+---
+import type { LinkDomainOption } from "../../lib/models/link"
+
+interface Props {
+	domains: LinkDomainOption[]
+}
+
+const { domains } = Astro.props
+
+const HTTP_CODE_LABELS: Record<number, string> = {
+	301: "301 Moved Permanently",
+	302: "302 Found",
+	307: "307 Temporary Redirect"
+}
+---
+
+<div style="margin-bottom: var(--spacing-md)">
+	<button id="create-link-btn" type="button">Create Link</button>
+</div>
+
+<dialog id="create-link-dialog">
+	<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--spacing-md)">
+		<h2 style="margin:0">Create Link</h2>
+		<button id="create-link-close-btn" type="button" data-variant="secondary" aria-label="Close">✕</button>
+	</div>
+	{domains.length === 0 ? (
+		<p>Add a domain before creating short links.</p>
+	) : (
+		<form action="/links" method="post">
+			<input name="intent" type="hidden" value="create" />
+			<div class="form-row">
+				<span>Domain</span>
+				<div class="radio-group">
+					{domains.map((domain, i) => (
+						<label>
+							<input
+								checked={i === 0}
+								name="domainId"
+								required
+								type="radio"
+								value={domain.id}
+							/>
+							{domain.host}
+						</label>
+					))}
+				</div>
+			</div>
+			<div class="form-row">
+				<label>
+					Slug
+					<input name="slug" placeholder="docs" required type="text" />
+				</label>
+			</div>
+			<div class="form-row">
+				<label>
+					Target URL
+					<input
+						name="targetUrl"
+						placeholder="https://example.com/docs"
+						required
+						type="url"
+					/>
+				</label>
+			</div>
+			<div class="form-row">
+				<span>HTTP code</span>
+				<div class="radio-group">
+					{[301, 302, 307].map((code) => (
+						<label>
+							<input
+								checked={code === 302}
+								name="httpCode"
+								type="radio"
+								value={String(code)}
+							/>
+							{HTTP_CODE_LABELS[code]}
+						</label>
+					))}
+				</div>
+			</div>
+			<div class="form-row">
+				<span>Status</span>
+				<div class="radio-group">
+					<label>
+						<input checked name="status" type="radio" value="active" />
+						Active
+					</label>
+					<label>
+						<input name="status" type="radio" value="disabled" />
+						Disabled
+					</label>
+				</div>
+			</div>
+			<div class="form-row">
+				<label>
+					Expiry (optional)
+					<input name="expiresAt" type="datetime-local" />
+				</label>
+			</div>
+			<div class="form-actions">
+				<button type="submit">Create short link</button>
+			</div>
+		</form>
+	)}
+</dialog>
+
+<script>
+	const btn = document.getElementById("create-link-btn")
+	const dialog = document.getElementById("create-link-dialog") as HTMLDialogElement | null
+	const closeBtn = document.getElementById("create-link-close-btn")
+	btn?.addEventListener("click", () => dialog?.showModal())
+	closeBtn?.addEventListener("click", () => dialog?.close())
+</script>

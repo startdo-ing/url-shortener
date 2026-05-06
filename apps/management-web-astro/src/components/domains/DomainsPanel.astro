@@ -1,0 +1,111 @@
+---
+import type { ManagedDomain } from "../../lib/models/domain"
+
+interface Props {
+	domains: ManagedDomain[]
+}
+
+const { domains } = Astro.props
+---
+
+<div class="card card--section">
+	<h2>Add domain</h2>
+	<form action="/domains" method="post">
+		<input name="intent" type="hidden" value="create" />
+		<div class="form-row">
+			<label>
+				Hostname
+				<input name="host" placeholder="go.startdo.ing" required type="text" />
+			</label>
+		</div>
+		<div class="form-actions">
+			<button type="submit">Add domain</button>
+		</div>
+	</form>
+</div>
+
+{domains.length === 0 ? (
+	<p>No domains yet. Add one above to start creating short links.</p>
+) : (
+	<table class="data-table">
+		<thead>
+			<tr>
+				<th>Host</th>
+				<th>Status</th>
+				<th>Verification</th>
+				<th>Links</th>
+				<th>Actions</th>
+			</tr>
+		</thead>
+		<tbody>
+			{domains.map((domain) => (
+				<tr>
+					<td>
+						<strong>{domain.host}</strong>
+						{domain.isPrimary ? (
+							<> <span class="badge badge--primary">primary</span></>
+						) : null}
+					</td>
+					<td>
+						<span class={`badge badge--${domain.isActive ? "active" : "disabled"}`}>
+							{domain.isActive ? "active" : "disabled"}
+						</span>
+					</td>
+					<td>
+						<span class={`badge badge--${domain.verificationStatus}`}>
+							{domain.verificationStatus}
+						</span>
+						{domain.verificationError ? (
+							<p class="table-meta">{domain.verificationError}</p>
+						) : null}
+						{domain.verificationCheckedAt ? (
+							<p class="table-meta">Checked {domain.verificationCheckedAt}</p>
+						) : null}
+					</td>
+					<td>{domain.linkedShortLinkCount}</td>
+					<td>
+						<div class="row-actions">
+							<form action="/domains" method="post">
+								<input name="domainId" type="hidden" value={domain.id} />
+								<input name="intent" type="hidden" value="verify" />
+								<button type="submit">Verify DNS</button>
+							</form>
+							{!domain.isPrimary ? (
+								<form action="/domains" method="post">
+									<input name="domainId" type="hidden" value={domain.id} />
+									<input name="intent" type="hidden" value="set-primary" />
+									<button data-variant="secondary" type="submit">
+										Set as primary
+									</button>
+								</form>
+							) : null}
+							<form action="/domains" method="post">
+								<input name="domainId" type="hidden" value={domain.id} />
+								<input
+									name="intent"
+									type="hidden"
+									value={domain.isActive ? "disable" : "enable"}
+								/>
+								<button data-variant="secondary" type="submit">
+									{domain.isActive ? "Disable" : "Enable"}
+								</button>
+							</form>
+							<form action="/domains" method="post">
+								<input name="domainId" type="hidden" value={domain.id} />
+								<input name="intent" type="hidden" value="delete" />
+								<input name="label" type="hidden" value={domain.host} />
+								<button
+									data-variant="secondary"
+									disabled={domain.linkedShortLinkCount > 0}
+									type="submit"
+								>
+									Delete
+								</button>
+							</form>
+						</div>
+					</td>
+				</tr>
+			))}
+		</tbody>
+	</table>
+)}

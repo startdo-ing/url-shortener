@@ -1,0 +1,31 @@
+---
+import Layout from "../components/Layout.astro"
+import { getAuthDiagnostics } from "../lib/auth/config"
+import { readSession } from "../lib/auth/session"
+import { findViewerById } from "../lib/models/user"
+
+const session = readSession(Astro.request)
+const viewer = session.auth?.userId
+	? await findViewerById(session.auth.userId)
+	: null
+const diagnostics = getAuthDiagnostics()
+const authConfigured = diagnostics.configured
+---
+
+<Layout title="Management Web" viewer={viewer}>
+	<section>
+		<h1>Management Web</h1>
+		<p>Keycloak OIDC is now the entry point for the management dashboard.</p>
+		<p>Auth status: {authConfigured ? "configured" : "configuration incomplete"}.</p>
+		{viewer ? (
+			<p>
+				Signed in as {viewer.displayName ?? viewer.email}. Open the{" "}
+				<a href="/dashboard">dashboard</a>.
+			</p>
+		) : (
+			<p>
+				Open the <a href="/auth">auth screen</a> to finish Keycloak setup and sign in.
+			</p>
+		)}
+	</section>
+</Layout>

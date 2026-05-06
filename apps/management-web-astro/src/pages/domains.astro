@@ -1,0 +1,25 @@
+---
+import Layout from "../components/Layout.astro"
+import FlashBanners from "../components/ui/FlashBanners.astro"
+import DomainsPanel from "../components/domains/DomainsPanel.astro"
+import { loadPageContext } from "../lib/page"
+import { listDomains } from "../lib/models/domain"
+
+const [{ viewer, error, notice }, domains] = await Promise.all([
+	loadPageContext(Astro.request, Astro.response),
+	listDomains()
+])
+---
+
+<Layout title="Domains" viewer={viewer}>
+	<section>
+		<h1>Domains</h1>
+		<FlashBanners error={error} notice={notice} />
+		<p>
+			Configure redirect hostnames like <strong>c.anh.pw</strong> or{" "}
+			<strong>go.startdo.ing</strong>. Set one as primary so it becomes the
+			default when creating new short links.
+		</p>
+		<DomainsPanel domains={domains} />
+	</section>
+</Layout>

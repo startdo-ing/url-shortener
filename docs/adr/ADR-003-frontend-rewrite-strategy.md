@@ -1,16 +1,21 @@
 # ADR-003: Frontend Rewrite Strategy if Remix Becomes Blocking
 
 ## Status
-Accepted
+Superseded by execution decision
 
 ## Context
 The project accepts Remix 3 Preview in production. If framework limitations block delivery, the frontend may need replacement without disrupting redirect traffic.
 
 ## Decision
-If Remix 3 Preview blocks progress, rewrite only the frontend app using another framework (TanStack Start is the first candidate).
+Remix 3 Preview blocked progress. The frontend rewrite is now active with Astro + Svelte.
+
+Execution decision:
+- Keep `apps/management-web` as deprecated trial code.
+- Build `apps/management-web-astro` as a full feature mirror of implemented Remix behavior.
+- Keep redirect service and database architecture unchanged.
 
 Scope of rewrite:
-- Dashboard UI and frontend framework layer only.
+- Management app frontend and server-side management app behavior only.
 - Redirect app and database remain unchanged.
 
 Rewrite trigger:
@@ -35,6 +40,6 @@ Negative:
 - Rejected if it repeatedly blocks milestone delivery.
 
 ## Follow-up
-- Define framework-agnostic dashboard API contracts.
-- Build acceptance tests around behavior, not framework internals.
-- Track blocker incidents in milestone reviews.
+- Maintain a parity checklist that maps every implemented Remix feature to Astro implementation status.
+- Block cutover until parity checklist passes without missing implemented features.
+- Keep Remix app runnable directly for rollback during migration, but out of default root and compose runtime paths.

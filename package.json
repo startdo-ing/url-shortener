@@ -8,17 +8,17 @@
 	},
 	"private": true,
 	"scripts": {
-		"dev": "concurrently --kill-others --kill-others-on-fail --names \"redirect,web\" --prefix-colors \"cyan,magenta\" \"cd apps/redirect-service && bun run dev\" \"cd apps/management-web && bun run dev\"",
+		"dev": "concurrently --kill-others --kill-others-on-fail --names \"redirect,web-astro\" --prefix-colors \"cyan,magenta\" \"cd apps/redirect-service && bun run dev\" \"cd apps/management-web-astro && bun run dev\"",
 		"db:migrate": "cd packages/shared-db && DATABASE_PATH=$(pwd)/../../dev.sqlite bun run migrate",
 		"db:backup": "cd packages/shared-db && bun run backup",
 		"tsgo": "tsgo",
-		"typecheck": "tsgo -p apps/redirect-service/tsconfig.json --noEmit && tsgo -p apps/management-web/tsconfig.json --noEmit && tsgo -p packages/shared-db/tsconfig.json --noEmit",
-		"biome:check": "biome lint apps/redirect-service/src apps/management-web/app apps/management-web/server.ts packages/shared-db/client.ts packages/shared-db/schema.ts packages/shared-db/drizzle.config.ts packages/shared-db/migrate.ts",
-		"biome:format": "biome format apps/redirect-service/src apps/management-web/app apps/management-web/server.ts packages/shared-db/client.ts packages/shared-db/schema.ts packages/shared-db/drizzle.config.ts packages/shared-db/migrate.ts --write",
+		"typecheck": "tsgo -p apps/redirect-service/tsconfig.json --noEmit && tsgo -p apps/management-web-astro/tsconfig.json --noEmit && tsgo -p packages/shared-db/tsconfig.json --noEmit",
+		"biome:check": "biome lint apps/redirect-service/src apps/management-web-astro/src apps/management-web-astro/astro.config.mjs packages/shared-db/client.ts packages/shared-db/schema.ts packages/shared-db/drizzle.config.ts packages/shared-db/migrate.ts",
+		"biome:format": "biome format apps/redirect-service/src apps/management-web-astro/src apps/management-web-astro/astro.config.mjs packages/shared-db/client.ts packages/shared-db/schema.ts packages/shared-db/drizzle.config.ts packages/shared-db/migrate.ts --write",
 		"format": "bun run biome:format",
 		"lint": "bun run biome:check",
 		"link": "bun run lint",
-		"test": "cd apps/redirect-service && bun test --pass-with-no-tests && cd ../management-web && bun test --pass-with-no-tests",
+		"test": "cd apps/redirect-service && bun test --pass-with-no-tests && cd ../management-web-astro && bun test --pass-with-no-tests",
 		"check-all": "bun run format && bun run lint && bun run typecheck && bun run test"
 	},
 	"workspaces": ["apps/*", "packages/*"]

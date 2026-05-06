@@ -1,11 +1,11 @@
 services:
-  management-web:
+  management-web-astro:
     build:
       context: .
-      dockerfile: apps/management-web/Dockerfile
+      dockerfile: apps/management-web-astro/Dockerfile
     restart: unless-stopped
     ports:
-      - "3915:3000"
+      - "3916:3000"
     volumes:
       - db-data:/data
     env_file:

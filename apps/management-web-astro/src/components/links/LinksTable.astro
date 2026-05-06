@@ -1,0 +1,161 @@
+---
+import type { ManagedShortLink, LinkDomainOption } from "../../lib/models/link"
+
+interface Props {
+	links: ManagedShortLink[]
+	domains: LinkDomainOption[]
+}
+
+const { links, domains } = Astro.props
+
+const HTTP_CODE_LABELS: Record<number, string> = {
+	301: "301 Moved Permanently",
+	302: "302 Found",
+	307: "307 Temporary Redirect"
+}
+---
+
+<h2>Existing Links</h2>
+{links.length === 0 ? (
+	<p>No short links match the current filters.</p>
+) : (
+	<table class="data-table">
+		<thead>
+			<tr>
+				<th>Link</th>
+				<th>Target</th>
+				<th>Status</th>
+				<th>HTTP</th>
+				<th>Expires</th>
+				<th>Actions</th>
+			</tr>
+		</thead>
+		<tbody>
+			{links.map((link) => (
+				<tr>
+					<td>
+						<strong>{link.domainHost}/{link.slug}</strong>
+					</td>
+					<td>{link.targetUrl}</td>
+					<td>
+						<span class={`badge badge--${link.status}`}>{link.status}</span>
+					</td>
+					<td>{HTTP_CODE_LABELS[link.httpCode] ?? link.httpCode}</td>
+					<td>{link.expiresAt ?? "—"}</td>
+					<td>
+						<div class="row-actions">
+							<details>
+								<summary>Edit</summary>
+								<form action="/links" method="post">
+									<input name="intent" type="hidden" value="update" />
+									<input name="linkId" type="hidden" value={link.id} />
+									<div class="form-row">
+										<span>Domain</span>
+										<div class="radio-group">
+											{domains.map((domain) => (
+												<label>
+													<input
+														checked={link.domainId === domain.id}
+														name="domainId"
+														required
+														type="radio"
+														value={domain.id}
+													/>
+													{domain.host}
+												</label>
+											))}
+										</div>
+									</div>
+									<div class="form-row">
+										<label>
+											Slug
+											<input
+												name="slug"
+												required
+												type="text"
+												value={link.slug}
+											/>
+										</label>
+									</div>
+									<div class="form-row">
+										<label>
+											Target URL
+											<input
+												name="targetUrl"
+												required
+												type="url"
+												value={link.targetUrl}
+											/>
+										</label>
+									</div>
+									<div class="form-row">
+										<span>HTTP code</span>
+										<div class="radio-group">
+											{[301, 302, 307].map((code) => (
+												<label>
+													<input
+														checked={code === link.httpCode}
+														name="httpCode"
+														type="radio"
+														value={String(code)}
+													/>
+													{HTTP_CODE_LABELS[code]}
+												</label>
+											))}
+										</div>
+									</div>
+									<div class="form-row">
+										<span>Status</span>
+										<div class="radio-group">
+											<label>
+												<input
+													checked={link.status === "active"}
+													name="status"
+													type="radio"
+													value="active"
+												/>
+												Active
+											</label>
+											<label>
+												<input
+													checked={link.status === "disabled"}
+													name="status"
+													type="radio"
+													value="disabled"
+												/>
+												Disabled
+											</label>
+										</div>
+									</div>
+									<div class="form-row">
+										<label>
+											Expiry (optional)
+											<input
+												name="expiresAt"
+												type="datetime-local"
+												value={link.expiresAt ? link.expiresAt.slice(0, 16) : ""}
+											/>
+										</label>
+									</div>
+									<div class="form-actions">
+										<button type="submit">Save changes</button>
+									</div>
+								</form>
+							</details>
+							<form action="/links" method="post">
+								<input name="intent" type="hidden" value="delete" />
+								<input
+									name="label"
+									type="hidden"
+									value={`${link.domainHost}/${link.slug}`}
+								/>
+								<input name="linkId" type="hidden" value={link.id} />
+								<button data-variant="secondary" type="submit">Delete</button>
+							</form>
+						</div>
+					</td>
+				</tr>
+			))}
+		</tbody>
+	</table>
+)}

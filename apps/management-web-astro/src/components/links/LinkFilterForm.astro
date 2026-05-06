@@ -1,0 +1,77 @@
+---
+import type { LinkFilters, LinkDomainOption } from "../../lib/models/link"
+
+interface Props {
+	domains: LinkDomainOption[]
+	filters: LinkFilters
+}
+
+const { domains, filters } = Astro.props
+---
+
+<div class="card card--section">
+	<h2>Filter</h2>
+	<form action="/links" method="get">
+		<div class="form-row">
+			<label>
+				Search
+				<input
+					name="query"
+					placeholder="Search slug, target URL, or domain"
+					type="search"
+					value={filters.query ?? ""}
+				/>
+			</label>
+		</div>
+		<div class="form-row">
+			<span>Domain</span>
+			<div class="radio-group">
+				<label>
+					<input checked={!filters.domainId} name="domainId" type="radio" value="" />
+					All domains
+				</label>
+				{domains.map((domain) => (
+					<label>
+						<input
+							checked={filters.domainId === domain.id}
+							name="domainId"
+							type="radio"
+							value={domain.id}
+						/>
+						{domain.host}
+					</label>
+				))}
+			</div>
+		</div>
+		<div class="form-row">
+			<span>Status</span>
+			<div class="radio-group">
+				<label>
+					<input checked={!filters.status} name="status" type="radio" value="" />
+					All
+				</label>
+				<label>
+					<input
+						checked={filters.status === "active"}
+						name="status"
+						type="radio"
+						value="active"
+					/>
+					Active
+				</label>
+				<label>
+					<input
+						checked={filters.status === "disabled"}
+						name="status"
+						type="radio"
+						value="disabled"
+					/>
+					Disabled
+				</label>
+			</div>
+		</div>
+		<div class="form-actions">
+			<button type="submit">Apply filters</button>
+		</div>
+	</form>
+</div>
