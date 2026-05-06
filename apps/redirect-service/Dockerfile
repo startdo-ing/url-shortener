@@ -18,6 +18,8 @@ ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+WORKDIR /app/apps/redirect-service
+
 EXPOSE 8000
 
-CMD ["bun", "run", "src/index.ts"]
+CMD ["bun", "run", "start"]

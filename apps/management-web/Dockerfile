@@ -11,6 +11,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/management-web/node_modules ./apps/management-web/node_modules
 COPY --from=builder /app/apps/management-web/dist ./apps/management-web/dist
 COPY --from=builder /app/apps/management-web/package.json ./apps/management-web/package.json
 COPY --from=builder /app/packages/shared-db ./packages/shared-db
