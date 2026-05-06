@@ -15,6 +15,12 @@ COPY --from=builder /app .
 
 WORKDIR /app/apps/management-web
 
+# Entrypoint script: Runs database migrations, then starts the app.
+# Migrations are idempotent (safe to run multiple times).
+# They detect the existing schema and skip if already applied.
+# See docs/DOCKER-SETUP.md for detailed explanation.
+RUN echo '#!/bin/sh\nset -e\necho "[STARTUP] Running migrations..."\nbun run --cwd /app/packages/shared-db migrate\necho "[STARTUP] Starting management-web..."\nexec bun run start' > /entrypoint.sh && chmod +x /entrypoint.sh
+
 EXPOSE 3000
 
-CMD ["bun", "run", "start"]
+CMD ["/entrypoint.sh"]
