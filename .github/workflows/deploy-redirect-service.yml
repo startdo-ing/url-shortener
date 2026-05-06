@@ -1,0 +1,64 @@
+name: Deploy Redirect Service to Home Server
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'apps/redirect-service/**'
+      - 'packages/shared-db/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/deploy-redirect-service.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      HOME_SERVER_HOST: ${{ secrets.HOME_SERVER_HOST }}
+      HOME_SERVER_USER: ${{ secrets.HOME_SERVER_USER }}
+      HOME_SERVER_URL_SHORTENER_PATH: ${{ secrets.HOME_SERVER_URL_SHORTENER_PATH }}
+    steps:
+      - name: 1. Setup SSH for Home Server
+        env:
+          HOME_SERVER_SSH_KEY: ${{ secrets.HOME_SERVER_SSH_KEY }}
+        run: |
+          test -n "$HOME_SERVER_HOST"
+          test -n "$HOME_SERVER_USER"
+          test -n "$HOME_SERVER_URL_SHORTENER_PATH"
+          test -n "$HOME_SERVER_SSH_KEY"
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$HOME_SERVER_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: 2. Deploy to Home Server via Cloudflare Access SSH
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          test -n "$CF_ACCESS_CLIENT_ID"
+          test -n "$CF_ACCESS_CLIENT_SECRET"
+
+          SSH_BASE_OPTS="-o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+          ssh -o "ProxyCommand=cloudflared access ssh --hostname %h" $SSH_BASE_OPTS ${HOME_SERVER_USER}@${HOME_SERVER_HOST} "
+            set -e
+            cd ${HOME_SERVER_URL_SHORTENER_PATH}
+            git pull
+            docker compose build redirect-service
+            docker compose up -d redirect-service
+          "
+
+      - name: 3. Verify Deployment
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          SSH_BASE_OPTS="-o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+          ssh -o "ProxyCommand=cloudflared access ssh --hostname %h" $SSH_BASE_OPTS ${HOME_SERVER_USER}@${HOME_SERVER_HOST} "
+            docker compose -f ${HOME_SERVER_URL_SHORTENER_PATH}/docker-compose.yml ps redirect-service
+          "
+
+          echo "✅ Redirect Service deployed successfully"
