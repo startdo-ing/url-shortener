@@ -68,4 +68,22 @@ describe("handleUserMutation", () => {
 			"Unknown user-management action."
 		)
 	})
+
+	it("sets an error flash when API token create is missing a name", async () => {
+		const session: SessionState = {}
+		const req = makeRequest({ intent: "api-token-create" })
+
+		await handleUserMutation(req, session, makeViewer())
+
+		expect(session.flashes?.[FLASH_ERROR_KEY]).toBe("Missing name.")
+	})
+
+	it("sets an error flash when API token remove is missing a tokenId", async () => {
+		const session: SessionState = {}
+		const req = makeRequest({ intent: "api-token-remove" })
+
+		await handleUserMutation(req, session, makeViewer())
+
+		expect(session.flashes?.[FLASH_ERROR_KEY]).toBe("Missing tokenId.")
+	})
 })

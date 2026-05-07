@@ -123,3 +123,26 @@ export const auditLogs = sqliteTable(
 		index("idx_audit_logs_created_at").on(t.createdAt)
 	]
 )
+
+export const apiTokens = sqliteTable(
+	"api_tokens",
+	{
+		id: text("id").primaryKey(),
+		name: text("name").notNull(),
+		tokenPrefix: text("token_prefix").notNull(),
+		tokenHash: text("token_hash").notNull(),
+		createdBy: text("created_by")
+			.notNull()
+			.references(() => users.id),
+		usageCount: integer("usage_count").notNull().default(0),
+		lastUsedAt: text("last_used_at"),
+		revokedAt: text("revoked_at"),
+		createdAt: text("created_at").notNull().default(now),
+		updatedAt: text("updated_at").notNull().default(now)
+	},
+	(t) => [
+		uniqueIndex("idx_api_tokens_hash").on(t.tokenHash),
+		index("idx_api_tokens_created_by").on(t.createdBy),
+		index("idx_api_tokens_revoked_at").on(t.revokedAt)
+	]
+)

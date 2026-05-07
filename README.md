@@ -31,7 +31,7 @@ The architecture is intentionally split so redirect latency stays isolated from 
 - Optional link password support in create/update forms
 - Analytics dashboard: top links and recent click events
 - Public JSON API for links (`/api/links`, `/api/links/:id`)
-- API auth via session cookie or bearer token (`MANAGEMENT_API_TOKEN`)
+- Admin-managed API tokens with rotation, removal, and usage counts
 - Health + metrics endpoints for operational monitoring
 
 ### Feature Matrix
@@ -50,6 +50,7 @@ The architecture is intentionally split so redirect latency stays isolated from 
 | Domain management | `management-web` | `/domains` |
 | Link management UI | `management-web` | `/links` |
 | Analytics dashboard | `management-web` | `GET /analytics` |
+| API token management | `management-web` | `GET /users` |
 | Public links API | `management-web` | `/api/links`, `/api/links/:id` |
 | Management metrics | `management-web` | `GET /metrics` |
 | Management health probe | `management-web` | `GET /health` |
@@ -86,7 +87,6 @@ KEYCLOAK_REALM=startdoing
 KEYCLOAK_CLIENT_ID=url-shortener-management-web
 KEYCLOAK_CLIENT_SECRET=replace-with-client-secret
 METRICS_BEARER_TOKEN=replace-with-an-internal-scrape-token
-MANAGEMENT_API_TOKEN=replace-with-a-random-api-token
 SESSION_SECRET=replace-with-a-random-string-at-least-32-characters-long
 ```
 
@@ -132,6 +132,7 @@ bun run db:backup
 - `GET /links`: Open the link management UI.
 - `GET /domains`: Open the domain management UI.
 - `GET /users`: Open the user management UI (admin only).
+- `POST /users`: Manage users and API tokens (admin only).
 - `GET /analytics`: Open the analytics dashboard.
 - `GET /setup/first-admin`: Open the first-admin bootstrap flow.
 
@@ -144,7 +145,7 @@ bun run db:backup
 
 #### management-web
 
-- `GET /api/links`: List links. Auth via session cookie or `Authorization: Bearer <MANAGEMENT_API_TOKEN>`.
+- `GET /api/links`: List links. Auth via session cookie or an admin-managed bearer token.
 - `POST /api/links`: Create a link.
 - `GET /api/links/:id`: Get one link.
 - `PATCH /api/links/:id`: Update a link.
@@ -164,10 +165,10 @@ bun run db:backup
 
 ### Public API Quickstart
 
-Use the management API with either a signed-in session cookie or an API token.
+Use the management API with either a signed-in session cookie or a token created by an admin on `/users`.
 
 ```sh
-export API_TOKEN="replace-with-management-api-token"
+export API_TOKEN="paste-a-token-created-in-the-users-page"
 
 curl -s -H "Authorization: Bearer $API_TOKEN" \
 	http://localhost:3000/api/links
@@ -189,7 +190,7 @@ curl -s -X POST http://localhost:3000/api/links \
 	}'
 ```
 
-When `MANAGEMENT_API_TOKEN` is set, token-authenticated requests run as the first active admin user in the local user table.
+Bearer-token requests run as the admin user who created the token. Token usage count and last-used time are updated on successful API authentication.
 
 ## Testing
 

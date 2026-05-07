@@ -4,9 +4,8 @@ import { createRequireApiViewer, readJsonBody } from "./api"
 import type { Viewer } from "./models/user"
 
 interface LoadOptions {
-	configuredToken?: string | null
+	authenticatedTokenViewer?: Viewer | null
 	hasPermission?: boolean
-	firstActiveAdmin?: Viewer | null
 	sessionState?: { auth?: { userId: string } }
 	suppliedToken?: string | null
 	viewerById?: Viewer | null
@@ -25,22 +24,21 @@ function makeViewer(overrides: Partial<Viewer> = {}): Viewer {
 
 function loadRequireApiViewer(options: LoadOptions = {}) {
 	return createRequireApiViewer({
-		findFirstActiveAdminFn: async () => options.firstActiveAdmin ?? null,
+		authenticateApiTokenFn: async () =>
+			options.authenticatedTokenViewer ?? null,
 		findViewerByIdFn: async () => options.viewerById ?? null,
 		hasPermissionFn: (_viewerOrRole, _permission) =>
 			options.hasPermission ?? true,
 		readSessionFn: (_request) => options.sessionState ?? {},
-		readTokenFn: (_request) => options.suppliedToken ?? null,
-		resolveApiTokenFn: () => options.configuredToken ?? null
+		readTokenFn: (_request) => options.suppliedToken ?? null
 	})
 }
 
 describe("requireApiViewer", () => {
-	it("authorizes using bearer token when MANAGEMENT_API_TOKEN matches", async () => {
+	it("authorizes using a managed API token", async () => {
 		const admin = makeViewer({ id: "admin-1", role: "admin", isActive: true })
 		const requireApiViewer = loadRequireApiViewer({
-			configuredToken: "secret-token",
-			firstActiveAdmin: admin,
+			authenticatedTokenViewer: admin,
 			suppliedToken: "secret-token"
 		})
 
@@ -54,10 +52,10 @@ describe("requireApiViewer", () => {
 		expect(result).toEqual({ viewerId: "admin-1" })
 	})
 
-	it("returns 503 when token auth is used but no active admin exists", async () => {
+	it("returns 403 when a token-authenticated user lacks permission", async () => {
 		const requireApiViewer = loadRequireApiViewer({
-			configuredToken: "secret-token",
-			firstActiveAdmin: null,
+			authenticatedTokenViewer: makeViewer({ role: "member" }),
+			hasPermission: false,
 			suppliedToken: "secret-token"
 		})
 
@@ -70,10 +68,8 @@ describe("requireApiViewer", () => {
 
 		expect(result).toBeInstanceOf(Response)
 		const response = result as Response
-		expect(response.status).toBe(503)
-		expect(await response.json()).toEqual({
-			error: "API token is configured but no active admin user is available."
-		})
+		expect(response.status).toBe(403)
+		expect(await response.json()).toEqual({ error: "Forbidden" })
 	})
 
 	it("falls back to session auth when token is missing", async () => {
@@ -120,7 +116,6 @@ describe("requireApiViewer", () => {
 
 	it("returns 401 when neither token nor session auth is valid", async () => {
 		const requireApiViewer = loadRequireApiViewer({
-			configuredToken: "secret-token",
 			sessionState: {},
 			suppliedToken: "wrong-token"
 		})

@@ -2,13 +2,9 @@ import type { APIRoute } from "astro"
 
 import { hasPermission, type AppPermission } from "./auth/permissions"
 import { readSession } from "./auth/session"
-import { findFirstActiveAdmin, findViewerById } from "./models/user"
+import { authenticateApiToken } from "./models/api-token"
+import { findViewerById } from "./models/user"
 import type { Viewer } from "./models/user"
-
-function getApiToken(): string | null {
-	const token = process.env.MANAGEMENT_API_TOKEN?.trim()
-	return token && token.length > 0 ? token : null
-}
 
 function readBearerToken(request: Request): string | null {
 	const authorization = request.headers.get("authorization")
@@ -25,7 +21,7 @@ function readBearerToken(request: Request): string | null {
 }
 
 interface ApiAuthDependencies {
-	findFirstActiveAdminFn: () => Promise<Viewer | null>
+	authenticateApiTokenFn: (token: string) => Promise<Viewer | null>
 	findViewerByIdFn: (id: string) => Promise<Viewer | null>
 	hasPermissionFn: (
 		viewerOrRole: Pick<Viewer, "role"> | Viewer["role"],
@@ -33,16 +29,14 @@ interface ApiAuthDependencies {
 	) => boolean
 	readSessionFn: (request: Request) => { auth?: { userId: string } }
 	readTokenFn: (request: Request) => string | null
-	resolveApiTokenFn: () => string | null
 }
 
 const defaultApiAuthDependencies: ApiAuthDependencies = {
-	findFirstActiveAdminFn: findFirstActiveAdmin,
+	authenticateApiTokenFn: authenticateApiToken,
 	findViewerByIdFn: findViewerById,
 	hasPermissionFn: hasPermission,
 	readSessionFn: readSession,
-	readTokenFn: readBearerToken,
-	resolveApiTokenFn: getApiToken
+	readTokenFn: readBearerToken
 }
 
 export function createRequireApiViewer(
@@ -52,26 +46,21 @@ export function createRequireApiViewer(
 		request: Request,
 		permission: AppPermission
 	): Promise<{ viewerId: string } | Response> {
-		const configuredToken = dependencies.resolveApiTokenFn()
 		const suppliedToken = dependencies.readTokenFn(request)
 
-		if (configuredToken && suppliedToken === configuredToken) {
-			const adminViewer = await dependencies.findFirstActiveAdminFn()
-			if (!adminViewer) {
-				return json(
-					{
-						error:
-							"API token is configured but no active admin user is available."
-					},
-					503
-				)
-			}
-
-			if (!dependencies.hasPermissionFn(adminViewer, permission)) {
+		if (suppliedToken) {
+			const tokenViewer =
+				await dependencies.authenticateApiTokenFn(suppliedToken)
+			if (
+				tokenViewer &&
+				!dependencies.hasPermissionFn(tokenViewer, permission)
+			) {
 				return json({ error: "Forbidden" }, 403)
 			}
 
-			return { viewerId: adminViewer.id }
+			if (tokenViewer) {
+				return { viewerId: tokenViewer.id }
+			}
 		}
 
 		const session = dependencies.readSessionFn(request)
