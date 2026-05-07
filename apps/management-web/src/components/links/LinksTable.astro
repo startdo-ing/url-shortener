@@ -1,4 +1,6 @@
 ---
+import EditLinkDialog from "./EditLinkDialog.astro"
+import ConfirmDialog from "../ui/ConfirmDialog.astro"
 import {
 	formatShortLinkUrl,
 	type ManagedShortLink,
@@ -6,11 +8,15 @@ import {
 } from "../../lib/models/link"
 
 interface Props {
-	links: ManagedShortLink[]
+	links: Array<ManagedShortLink & { totalClicks: number }>
 	domains: LinkDomainOption[]
+	formAction?: string
+	returnTo?: string
 }
 
 const { links, domains } = Astro.props
+const formAction = Astro.props.formAction ?? "/dashboard"
+const returnTo = Astro.props.returnTo ?? "/dashboard"
 ---
 
 <h2>Existing Links</h2>
@@ -22,6 +28,7 @@ const { links, domains } = Astro.props
 			<tr>
 				<th>Link</th>
 				<th>Target</th>
+				<th>Total Click</th>
 				<th>Status</th>
 				<th>HTTP</th>
 				<th>Expires</th>
@@ -60,6 +67,7 @@ const { links, domains } = Astro.props
 							{link.targetUrl}
 						</a>
 					</td>
+					<td>{link.totalClicks}</td>
 					<td>
 						<span class={`badge badge--${link.status}`}>{link.status}</span>
 					</td>
@@ -67,124 +75,26 @@ const { links, domains } = Astro.props
 					<td>{link.expiresAt ?? "—"}</td>
 					<td>
 						<div class="row-actions">
-							<details class="row-actions__details">
-								<summary class="row-actions__summary">Edit</summary>
-								<form action="/links" method="post">
-									<input name="intent" type="hidden" value="update" />
-									<input name="linkId" type="hidden" value={link.id} />
-									<div class="form-row">
-										<span>Domain</span>
-										<div class="radio-group">
-											{domains.map((domain) => (
-												<label>
-													<input
-														checked={link.domainId === domain.id}
-														name="domainId"
-														required
-														type="radio"
-														value={domain.id}
-													/>
-													{domain.host}
-												</label>
-											))}
-										</div>
-									</div>
-									<div class="form-row">
-										<label>
-											Slug
-											<input
-												name="slug"
-												required
-												type="text"
-												value={link.slug}
-											/>
-										</label>
-									</div>
-									<div class="form-row">
-										<label>
-											Target URL
-											<input
-												name="targetUrl"
-												required
-												type="url"
-												value={link.targetUrl}
-											/>
-										</label>
-									</div>
-									<div class="form-row">
-										<span>HTTP code</span>
-										<div class="radio-group">
-											{[301, 302, 307].map((code) => (
-												<label>
-													<input
-														checked={code === link.httpCode}
-														name="httpCode"
-														type="radio"
-														value={String(code)}
-													/>
-													{code}
-												</label>
-											))}
-										</div>
-									</div>
-									<div class="form-row">
-										<span>Status</span>
-										<div class="radio-group">
-											<label>
-												<input
-													checked={link.status === "active"}
-													name="status"
-													type="radio"
-													value="active"
-												/>
-												Active
-											</label>
-											<label>
-												<input
-													checked={link.status === "disabled"}
-													name="status"
-													type="radio"
-													value="disabled"
-												/>
-												Disabled
-											</label>
-										</div>
-									</div>
-									<div class="form-row">
-										<label>
-											Expiry (optional)
-											<input
-												name="expiresAt"
-												type="datetime-local"
-												value={link.expiresAt ? link.expiresAt.slice(0, 16) : ""}
-											/>
-										</label>
-									</div>
-									<div class="form-row">
-										<label>
-											Password (optional)
-											<input
-												name="password"
-												placeholder="Leave empty to keep current password"
-												type="password"
-											/>
-										</label>
-									</div>
-									<div class="form-actions">
-										<button type="submit">Save changes</button>
-									</div>
-								</form>
-							</details>
-							<form action="/links" method="post">
-								<input name="intent" type="hidden" value="delete" />
-								<input
-									name="label"
-									type="hidden"
-									value={shortUrl}
-								/>
-								<input name="linkId" type="hidden" value={link.id} />
-								<button data-variant="secondary" type="submit">Delete</button>
-							</form>
+							<EditLinkDialog
+								domains={domains}
+								formAction={formAction}
+								link={link}
+								returnTo={returnTo}
+							/>
+							<ConfirmDialog
+								description={`Delete ${shortUrl}? This action cannot be undone.`}
+								dialogId={`delete-link-${link.id}`}
+								formAction={formAction}
+								idFieldName="linkId"
+								idFieldValue={link.id}
+								intentValue="delete"
+								labelFieldValue={shortUrl}
+								returnTo={returnTo}
+								title="Delete Link"
+								confirmLabel="Delete"
+								triggerLabel="Delete"
+								triggerVariant="secondary"
+							/>
 						</div>
 					</td>
 							</>

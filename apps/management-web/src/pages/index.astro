@@ -2,29 +2,33 @@
 import Layout from "../components/Layout.astro"
 import { getAuthDiagnostics } from "../lib/auth/config"
 import { readSession } from "../lib/auth/session"
+import { countLocalUsers } from "../lib/models/user"
 import { findViewerById } from "../lib/models/user"
 
 const session = readSession(Astro.request)
 const viewer = session.auth?.userId
 	? await findViewerById(session.auth.userId)
 	: null
+const localUserCount = await countLocalUsers()
 const diagnostics = getAuthDiagnostics()
 const authConfigured = diagnostics.configured
 ---
 
 <Layout title="Management Web" viewer={viewer}>
 	<section>
-		<h1>Management Web</h1>
-		<p>Keycloak OIDC is now the entry point for the management dashboard.</p>
+		<h1>Setup Onboarding</h1>
+		<p>This page is only used before the first local admin account is created.</p>
 		<p>Auth status: {authConfigured ? "configured" : "configuration incomplete"}.</p>
+		<p>Local users found: {localUserCount}</p>
 		{viewer ? (
 			<p>
-				Signed in as {viewer.displayName ?? viewer.email}. Open the{" "}
+				Signed in as {viewer.displayName ?? viewer.email}. Continue to{" "}
 				<a href="/dashboard">dashboard</a>.
 			</p>
 		) : (
 			<p>
-				Open the <a href="/auth">auth screen</a> to finish Keycloak setup and sign in.
+				Open the <a href="/auth">auth screen</a> to sign in, then claim the first admin
+				account at setup.
 			</p>
 		)}
 	</section>

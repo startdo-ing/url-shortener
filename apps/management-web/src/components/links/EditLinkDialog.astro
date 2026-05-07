@@ -1,0 +1,115 @@
+---
+import type { LinkDomainOption, ManagedShortLink } from "../../lib/models/link"
+
+interface Props {
+	link: ManagedShortLink & { totalClicks: number }
+	domains: LinkDomainOption[]
+	formAction?: string
+	returnTo?: string
+}
+
+const { link, domains } = Astro.props
+const formAction = Astro.props.formAction ?? "/dashboard"
+const returnTo = Astro.props.returnTo ?? "/dashboard"
+const dialogId = `edit-link-${link.id}`
+const closeId = `${dialogId}-close`
+const HTTP_CODE_LABELS: Record<number, string> = {
+	301: "301 Moved Permanently",
+	302: "302 Found",
+	307: "307 Temporary Redirect"
+}
+---
+
+<button id={`${dialogId}-trigger`} type="button" data-variant="secondary">Edit</button>
+
+<dialog aria-labelledby={`${dialogId}-title`} id={dialogId}>
+	<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--spacing-md)">
+		<h2 id={`${dialogId}-title`} style="margin:0">Edit Link</h2>
+		<button id={closeId} type="button" data-variant="secondary" aria-label="Close">✕</button>
+	</div>
+	<form action={formAction} method="post">
+		<input name="intent" type="hidden" value="update" />
+		<input name="returnTo" type="hidden" value={returnTo} />
+		<input name="linkId" type="hidden" value={link.id} />
+		<div class="form-row">
+			<label>
+				Domain
+				<select name="domainId" required>
+					{domains.map((domain) => (
+						<option selected={link.domainId === domain.id} value={domain.id}>
+							{domain.host}
+						</option>
+					))}
+				</select>
+			</label>
+		</div>
+		<div class="form-row">
+			<label>
+				Slug
+				<input name="slug" required type="text" value={link.slug} />
+			</label>
+		</div>
+		<div class="form-row">
+			<label>
+				Target URL
+				<input name="targetUrl" required type="url" value={link.targetUrl} />
+			</label>
+		</div>
+		<div class="form-row">
+			<label>
+				HTTP code
+				<select name="httpCode" required>
+					{[301, 302, 307].map((code) => (
+						<option selected={code === link.httpCode} value={String(code)}>
+							{HTTP_CODE_LABELS[code]}
+						</option>
+					))}
+				</select>
+			</label>
+		</div>
+		<div class="form-row">
+			<label>
+				Status
+				<select name="status">
+					<option selected={link.status === "active"} value="active">Active</option>
+					<option selected={link.status === "disabled"} value="disabled">Disabled</option>
+				</select>
+			</label>
+		</div>
+		<div class="form-row">
+			<label>
+				Expiry (optional)
+				<input
+					name="expiresAt"
+					type="datetime-local"
+					value={link.expiresAt ? link.expiresAt.slice(0, 16) : ""}
+				/>
+			</label>
+		</div>
+		<div class="form-row">
+			<label>
+				Password (optional)
+				<input
+					name="password"
+					placeholder="Leave empty to keep current password"
+					type="password"
+				/>
+			</label>
+		</div>
+		<div class="form-actions">
+			<button id={`${dialogId}-cancel`} type="button" data-variant="secondary">Cancel</button>
+			<button type="submit">Save changes</button>
+		</div>
+	</form>
+</dialog>
+
+<script define:vars={{ closeId, dialogId }}>
+	const trigger = document.getElementById(`${dialogId}-trigger`)
+	const dialog = document.getElementById(dialogId)
+	const closeButton = document.getElementById(closeId)
+	const cancelButton = document.getElementById(`${dialogId}-cancel`)
+
+	trigger?.addEventListener("click", () => dialog?.showModal())
+	closeButton?.addEventListener("click", () => dialog?.close())
+	cancelButton?.addEventListener("click", () => dialog?.close())
+</script>

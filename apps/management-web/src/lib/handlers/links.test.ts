@@ -26,14 +26,27 @@ function makeRequest(data: Record<string, string>): Request {
 }
 
 describe("handleLinkMutation", () => {
-	it("always redirects to /links", async () => {
+	it("redirects to /dashboard by default", async () => {
 		const session: SessionState = {}
 		const req = makeRequest({ intent: "unknown" })
 
 		const response = await handleLinkMutation(req, session, makeViewer())
 
 		expect(response.status).toBe(302)
-		expect(response.headers.get("location")).toBe("/links")
+		expect(response.headers.get("location")).toBe("/dashboard")
+	})
+
+	it("redirects to returnTo when provided", async () => {
+		const session: SessionState = {}
+		const req = makeRequest({
+			intent: "unknown",
+			returnTo: "/dashboard?pageSize=50"
+		})
+
+		const response = await handleLinkMutation(req, session, makeViewer())
+
+		expect(response.status).toBe(302)
+		expect(response.headers.get("location")).toBe("/dashboard?pageSize=50")
 	})
 
 	it("sets an error flash for unknown intent", async () => {

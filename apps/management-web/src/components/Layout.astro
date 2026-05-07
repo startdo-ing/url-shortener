@@ -30,8 +30,9 @@ const { title, viewer } = Astro.props
 				<nav class="site-nav">
 					<a href="/">Home</a>
 					{viewer ? <a href="/dashboard">Dashboard</a> : null}
-					{viewer && hasPermission(viewer, "links:manage") ? <a href="/links">Links</a> : null}
-					{viewer && hasPermission(viewer, "analytics:view") ? <a href="/analytics">Analytics</a> : null}
+					{viewer && hasPermission(viewer, "analytics:view") ? (
+						<a href="/click-events">Click Events</a>
+					) : null}
 					{
 						viewer && hasPermission(viewer, "domains:manage") ? (
 							<a href="/domains">Domains</a>

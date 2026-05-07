@@ -10,7 +10,7 @@ export interface PageContext {
 
 export async function loadPageContext(
 	request: Request,
-	response: Response
+	response: { headers: Headers }
 ): Promise<PageContext> {
 	const session = readSession(request)
 	const viewer = session.auth?.userId

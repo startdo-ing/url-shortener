@@ -1,0 +1,78 @@
+---
+interface Props {
+	dialogId: string
+	title: string
+	description: string
+	formAction: string
+	confirmLabel?: string
+	intentValue: string
+	idFieldName: string
+	idFieldValue: string
+	labelFieldValue?: string
+	returnTo?: string
+	triggerLabel?: string
+	triggerVariant?: "primary" | "secondary"
+}
+
+const {
+	dialogId,
+	title,
+	description,
+	formAction,
+	confirmLabel = "Confirm",
+	intentValue,
+	idFieldName,
+	idFieldValue,
+	labelFieldValue,
+	returnTo = "/dashboard",
+	triggerLabel = "Delete",
+	triggerVariant = "secondary"
+} = Astro.props
+
+const triggerId = `${dialogId}-trigger`
+const closeId = `${dialogId}-close`
+---
+
+<button
+	id={triggerId}
+	data-variant={triggerVariant === "secondary" ? "secondary" : undefined}
+	type="button"
+>
+	{triggerLabel}
+</button>
+
+<dialog aria-labelledby={`${dialogId}-title`} id={dialogId}>
+	<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--spacing-md)">
+		<h2 id={`${dialogId}-title`} style="margin:0">{title}</h2>
+		<button
+			id={closeId}
+			type="button"
+			data-variant="secondary"
+			aria-label="Close"
+		>
+			✕
+		</button>
+	</div>
+	<p>{description}</p>
+	<form action={formAction} method="post">
+		<input name="intent" type="hidden" value={intentValue} />
+		<input name={idFieldName} type="hidden" value={idFieldValue} />
+		{labelFieldValue ? <input name="label" type="hidden" value={labelFieldValue} /> : null}
+		<input name="returnTo" type="hidden" value={returnTo} />
+		<div class="form-actions">
+			<button id={`${dialogId}-cancel`} type="button" data-variant="secondary">Cancel</button>
+			<button type="submit">{confirmLabel}</button>
+		</div>
+	</form>
+</dialog>
+
+<script define:vars={{ closeId, dialogId, triggerId }}>
+	const trigger = document.getElementById(triggerId)
+	const dialog = document.getElementById(dialogId)
+	const closeButton = document.getElementById(closeId)
+	const cancelButton = document.getElementById(`${dialogId}-cancel`)
+
+	trigger?.addEventListener("click", () => dialog?.showModal())
+	closeButton?.addEventListener("click", () => dialog?.close())
+	cancelButton?.addEventListener("click", () => dialog?.close())
+</script>

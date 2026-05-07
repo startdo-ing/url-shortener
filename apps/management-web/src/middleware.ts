@@ -23,10 +23,9 @@ import { logger } from "./lib/observability/logger"
 import { incrementCounter, recordDuration } from "./lib/observability/metrics"
 
 const protectedPaths = new Set([
-	"/analytics",
+	"/click-events",
 	"/dashboard",
 	"/domains",
-	"/links",
 	"/users"
 ])
 
@@ -128,6 +127,13 @@ async function routeRequest(
 		}
 	}
 
+	if (pathname === "/") {
+		if ((await countLocalUsers()) > 0) {
+			return redirectWithSession("/dashboard", session)
+		}
+		return next()
+	}
+
 	if (!protectedPaths.has(pathname)) {
 		return next()
 	}
@@ -158,16 +164,10 @@ async function routeRequest(
 		return redirectWithSession("/dashboard", session)
 	}
 
-	if (pathname === "/links" && !hasPermission(viewer, "links:manage")) {
-		flash(
-			session,
-			FLASH_ERROR_KEY,
-			"You do not have permission to manage links."
-		)
-		return redirectWithSession("/dashboard", session)
-	}
-
-	if (pathname === "/analytics" && !hasPermission(viewer, "analytics:view")) {
+	if (
+		pathname === "/click-events" &&
+		!hasPermission(viewer, "analytics:view")
+	) {
 		flash(
 			session,
 			FLASH_ERROR_KEY,
@@ -184,7 +184,7 @@ async function routeRequest(
 		return handleDomainMutation(request, session, viewer)
 	}
 
-	if (pathname === "/links" && request.method === "POST") {
+	if (pathname === "/dashboard" && request.method === "POST") {
 		return handleLinkMutation(request, session, viewer)
 	}
 

@@ -1,44 +1,107 @@
 ---
 import Layout from "../components/Layout.astro"
+import CreateLinkDialog from "../components/links/CreateLinkDialog.astro"
+import DashboardToolbar from "../components/links/DashboardToolbar.svelte"
+import LinksTable from "../components/links/LinksTable.astro"
 import FlashBanners from "../components/ui/FlashBanners.astro"
+import { getDashboardStats, listLinkClickTotals } from "../lib/models/analytics"
+import {
+	listLinkDomains,
+	listLinks,
+	type LinkFilters
+} from "../lib/models/link"
 import { loadPageContext } from "../lib/page"
 
-const { viewer, error, notice } = await loadPageContext(
-	Astro.request,
-	Astro.response
+const PAGE_SIZES = [10, 20, 50, 100]
+
+function readFilters(url: URL): LinkFilters {
+	const status = url.searchParams.get("status")
+	const query = url.searchParams.get("query")?.trim() || undefined
+	const domainId = url.searchParams.get("domainId")?.trim() || undefined
+
+	return {
+		domainId,
+		query,
+		status: status === "active" || status === "disabled" ? status : undefined
+	}
+}
+
+function readPageSize(url: URL): number {
+	const raw = Number(url.searchParams.get("pageSize") ?? 20)
+	return PAGE_SIZES.includes(raw) ? raw : 20
+}
+
+const filters = readFilters(Astro.url)
+const pageSize = readPageSize(Astro.url)
+
+const [{ viewer, error, notice }, domains, links, stats] = await Promise.all([
+	loadPageContext(Astro.request, Astro.response),
+	listLinkDomains(),
+	listLinks(filters),
+	getDashboardStats()
+])
+
+const visibleLinks = links.slice(0, pageSize)
+const clickTotals = await listLinkClickTotals(
+	visibleLinks.map((link) => link.id)
 )
+const linksWithClicks = visibleLinks.map((link) => ({
+	...link,
+	totalClicks: clickTotals[link.id] ?? 0
+}))
 ---
 
 <Layout title="Dashboard" viewer={viewer}>
 	<section>
 		<h1>Dashboard</h1>
 		<FlashBanners error={error} notice={notice} />
+		<div class="dashboard-stats" aria-label="Dashboard statistics">
+			<article class="card dashboard-stat">
+				<h2>Total Shortened Links</h2>
+				<p class="dashboard-stat__value">{stats.totalShortLinks}</p>
+			</article>
+			<article class="card dashboard-stat">
+				<h2>Total Clicks</h2>
+				<p class="dashboard-stat__value">{stats.totalClicks}</p>
+			</article>
+			<article class="card dashboard-stat">
+				<h2>Active Links</h2>
+				<p class="dashboard-stat__value">{stats.activeLinks}</p>
+			</article>
+			<article class="card dashboard-stat">
+				<h2>Disabled Links</h2>
+				<p class="dashboard-stat__value">{stats.disabledLinks}</p>
+			</article>
+			<article class="card dashboard-stat">
+				<h2>Total Domains</h2>
+				<p class="dashboard-stat__value">{stats.totalDomains}</p>
+			</article>
+		</div>
 
-		{viewer ? (
-			<>
-				<p>
-					Signed in as {viewer.displayName ?? viewer.email} with local role{" "}
-					{viewer.role}.
-				</p>
-				<p>
-					OIDC login and first-admin bootstrap are wired. The next slices are
-					link/domain workflows.
-				</p>
-				<p>
-					Open the <a href="/links">links page</a> to create, update, search, or delete
-					short links.
-				</p>
-				<p>
-					Open the <a href="/domains">domains page</a> to add redirect hosts and verify
-					their DNS.
-				</p>
-				{viewer.role === "admin" ? (
-					<p>
-						Open the <a href="/users">user-management page</a> to promote, demote, or
-						disable local dashboard users.
-					</p>
-				) : null}
-			</>
-		) : null}
+		<div class="card card--section">
+			<div class="dashboard-toolbar-wrap">
+				<DashboardToolbar
+					client:load
+					domains={domains}
+					pageSizes={PAGE_SIZES}
+					pageSize={pageSize}
+					selectedDomainId={filters.domainId}
+					selectedStatus={filters.status}
+					query={filters.query}
+				/>
+				<CreateLinkDialog
+					actionPath="/dashboard"
+					domains={domains}
+					returnTo={`/dashboard${Astro.url.search}`}
+				/>
+			</div>
+
+			<LinksTable
+				domains={domains}
+				formAction="/dashboard"
+				links={linksWithClicks}
+				returnTo={`/dashboard${Astro.url.search}`}
+			/>
+		</div>
 	</section>
 </Layout>

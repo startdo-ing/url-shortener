@@ -21,6 +21,9 @@ export async function handleLinkMutation(
 ): Promise<Response> {
 	const formData = await request.formData()
 	const intent = String(formData.get("intent") ?? "")
+	const returnTo = normalizeReturnTo(
+		readOptionalValue(formData.get("returnTo"))
+	)
 
 	try {
 		switch (intent) {
@@ -63,7 +66,15 @@ export async function handleLinkMutation(
 		)
 	}
 
-	return redirectWithSession("/links", session)
+	return redirectWithSession(returnTo, session)
+}
+
+function normalizeReturnTo(value: string | null | undefined): string {
+	if (value == null || value.length === 0 || !value.startsWith("/")) {
+		return "/dashboard"
+	}
+
+	return value
 }
 
 function readLinkInput(formData: FormData): ShortLinkInput {

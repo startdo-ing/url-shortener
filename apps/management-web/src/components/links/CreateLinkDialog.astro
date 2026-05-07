@@ -3,9 +3,13 @@ import type { LinkDomainOption } from "../../lib/models/link"
 
 interface Props {
 	domains: LinkDomainOption[]
+	actionPath?: string
+	returnTo?: string
 }
 
 const { domains } = Astro.props
+const actionPath = Astro.props.actionPath ?? "/dashboard"
+const returnTo = Astro.props.returnTo ?? "/dashboard"
 
 const HTTP_CODE_LABELS: Record<number, string> = {
 	301: "301 Moved Permanently",
@@ -14,7 +18,8 @@ const HTTP_CODE_LABELS: Record<number, string> = {
 }
 ---
 
-<div style="margin-bottom: var(--spacing-md)">
+
+<div class="create-link-dialog-trigger">
 	<button id="create-link-btn" type="button">Create Link</button>
 </div>
 
@@ -26,8 +31,9 @@ const HTTP_CODE_LABELS: Record<number, string> = {
 	{domains.length === 0 ? (
 		<p>Add a domain before creating short links.</p>
 	) : (
-		<form action="/links" method="post">
+		<form action={actionPath} method="post">
 			<input name="intent" type="hidden" value="create" />
+			<input name="returnTo" type="hidden" value={returnTo} />
 			<div class="form-row">
 				<span>Domain</span>
 				<div class="radio-group">
