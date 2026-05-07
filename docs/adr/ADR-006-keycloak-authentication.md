@@ -17,7 +17,7 @@ Scope:
 - redirect-service does not require authentication (public hot path).
 
 Integration approach:
-- Use OIDC authorization code flow (server-side, Remix loaders).
+- Use OIDC authorization code flow (server-side, Astro middleware).
 - Store the authenticated local viewer in a secure server-side session after a successful callback.
 - Keep the local `users` table as the authorization source of truth for `admin` and `member`.
 - Reserve Keycloak role names `url-shortener-admin` and `url-shortener-member` for future claim-to-role mapping, but do not auto-sync them into existing local users in the current milestone.

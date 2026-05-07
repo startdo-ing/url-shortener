@@ -113,6 +113,57 @@ describe("createLinkRepository", () => {
 		const listed = await repository.listLinks()
 		expect(listed).toHaveLength(0)
 	})
+
+	it("rejects target URLs with embedded credentials", async () => {
+		const db = createDb(
+			`/tmp/url-shortener-links-${crypto.randomUUID()}.sqlite`
+		)
+		migrate(db, { migrationsFolder })
+		const repository = createLinkRepository(db)
+		const actorUserId = await seedUser(db)
+		const domainId = await seedDomain(db, actorUserId, "c.example.com")
+
+		await expect(
+			repository.createLink(
+				{
+					domainId,
+					slug: "unsafe",
+					targetUrl: "https://user:pass@example.com/private"
+				},
+				actorUserId
+			)
+		).rejects.toThrow("Target URL must not include a username or password.")
+	})
+
+	it("hashes password on create and preserves it when update omits password", async () => {
+		const db = createDb(
+			`/tmp/url-shortener-links-${crypto.randomUUID()}.sqlite`
+		)
+		migrate(db, { migrationsFolder })
+		const repository = createLinkRepository(db)
+		const actorUserId = await seedUser(db)
+		const domainId = await seedDomain(db, actorUserId, "c.example.com")
+
+		const created = await repository.createLink(
+			{
+				domainId,
+				slug: "protected",
+				targetUrl: "https://example.com/private",
+				password: "secret123"
+			},
+			actorUserId
+		)
+
+		expect(created.passwordHash).toContain("s1:")
+
+		const updated = await repository.updateLink(created.id, {
+			domainId,
+			slug: "protected",
+			targetUrl: "https://example.com/private-v2"
+		})
+
+		expect(updated.passwordHash).toBe(created.passwordHash)
+	})
 })
 
 async function seedDomain(

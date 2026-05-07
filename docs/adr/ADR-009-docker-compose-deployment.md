@@ -10,7 +10,7 @@ Both apps need a consistent, reproducible deployment strategy. The project runs 
 Use Docker Compose to deploy both apps together.
 
 Service layout:
-- `management-web` — Remix dashboard app container
+- `management-web` — Astro + Svelte dashboard app container
 - `redirect-service` — Bun redirect app container
 - Shared SQLite database file mounted as a Docker volume accessible to both containers
 

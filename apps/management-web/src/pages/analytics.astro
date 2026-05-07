@@ -1,0 +1,79 @@
+---
+import Layout from "../components/Layout.astro"
+import FlashBanners from "../components/ui/FlashBanners.astro"
+import { loadPageContext } from "../lib/page"
+import {
+	listRecentClickEvents,
+	listTopClickedLinks
+} from "../lib/models/analytics"
+
+const [{ viewer, error, notice }, topLinks, recentEvents] = await Promise.all([
+	loadPageContext(Astro.request, Astro.response),
+	listTopClickedLinks(20),
+	listRecentClickEvents(100)
+])
+---
+
+<Layout title="Analytics" viewer={viewer}>
+	<section>
+		<h1>Analytics</h1>
+		<FlashBanners error={error} notice={notice} />
+		<p>Recent click traffic captured by the redirect service.</p>
+
+		<h2>Top Links</h2>
+		{topLinks.length === 0 ? (
+			<p>No click events recorded yet.</p>
+		) : (
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th>Link</th>
+						<th>Target</th>
+						<th>Total Clicks</th>
+					</tr>
+				</thead>
+				<tbody>
+					{topLinks.map((item) => (
+						<tr>
+							<td>
+								<strong>{item.domainHost}/{item.slug}</strong>
+							</td>
+							<td>{item.targetUrl}</td>
+							<td>{item.totalClicks}</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		)}
+
+		<h2>Recent Click Events</h2>
+		{recentEvents.length === 0 ? (
+			<p>No click events recorded yet.</p>
+		) : (
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th>Occurred At</th>
+						<th>Link</th>
+						<th>Path</th>
+						<th>Referrer</th>
+						<th>Country</th>
+					</tr>
+				</thead>
+				<tbody>
+					{recentEvents.map((event) => (
+						<tr>
+							<td>{event.occurredAt}</td>
+							<td>
+								{event.domainHost}/{event.slug}
+							</td>
+							<td>{event.requestPath}</td>
+							<td>{event.referer ?? "-"}</td>
+							<td>{event.countryCode ?? "-"}</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		)}
+	</section>
+</Layout>

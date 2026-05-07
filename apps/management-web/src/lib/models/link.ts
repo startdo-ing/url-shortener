@@ -1,3 +1,5 @@
+import { randomBytes, scryptSync } from "node:crypto"
+
 import { createDb } from "@url-shortener/shared-db/client"
 import type { Db } from "@url-shortener/shared-db/client"
 import { domains, shortLinks } from "@url-shortener/shared-db/schema"
@@ -33,6 +35,7 @@ export interface ShortLinkInput {
 	domainId: string
 	expiresAt?: string | null
 	httpCode?: number
+	password?: string
 	slug: string
 	status?: ManagedShortLink["status"]
 	targetUrl: string
@@ -107,6 +110,7 @@ export function createLinkRepository(database: Db) {
 				expiresAt: values.expiresAt,
 				httpCode: values.httpCode,
 				id: linkId,
+				passwordHash: values.passwordHash,
 				slug: values.slug,
 				status: values.status,
 				targetUrl: values.targetUrl,
@@ -134,20 +138,34 @@ export function createLinkRepository(database: Db) {
 		}
 
 		await requireDomain(input.domainId)
-		const values = normalizeInput(input)
+		const values = normalizeInput(input, { preservePasswordOnEmpty: true })
+		const updates: {
+			domainId: string
+			expiresAt: string | null
+			httpCode: ManagedShortLink["httpCode"]
+			slug: string
+			status: ManagedShortLink["status"]
+			targetUrl: string
+			updatedAt: string
+			passwordHash?: string | null
+		} = {
+			domainId: input.domainId,
+			expiresAt: values.expiresAt,
+			httpCode: values.httpCode,
+			slug: values.slug,
+			status: values.status,
+			targetUrl: values.targetUrl,
+			updatedAt: new Date().toISOString()
+		}
+
+		if (values.passwordHash !== undefined) {
+			updates.passwordHash = values.passwordHash
+		}
 
 		try {
 			await database
 				.update(shortLinks)
-				.set({
-					domainId: input.domainId,
-					expiresAt: values.expiresAt,
-					httpCode: values.httpCode,
-					slug: values.slug,
-					status: values.status,
-					targetUrl: values.targetUrl,
-					updatedAt: new Date().toISOString()
-				})
+				.set(updates)
 				.where(eq(shortLinks.id, linkId))
 		} catch (error) {
 			throw mapLinkWriteError(error)
@@ -210,6 +228,7 @@ export function createLinkRepository(database: Db) {
 	return {
 		createLink,
 		deleteLink,
+		findLinkById,
 		listLinkDomains,
 		listLinks,
 		updateLink
@@ -220,6 +239,7 @@ const repository = createLinkRepository(db)
 
 export const createLink = repository.createLink
 export const deleteLink = repository.deleteLink
+export const getLinkById = repository.findLinkById
 export const listLinkDomains = repository.listLinkDomains
 export const listLinks = repository.listLinks
 export const updateLink = repository.updateLink
@@ -262,7 +282,10 @@ function mapLinkWriteError(error: unknown) {
 	return error instanceof Error ? error : new Error("Short link write failed.")
 }
 
-function normalizeInput(input: ShortLinkInput) {
+function normalizeInput(
+	input: ShortLinkInput,
+	options: { preservePasswordOnEmpty?: boolean } = {}
+) {
 	const slug = input.slug.trim()
 	if (!SLUG_PATTERN.test(slug)) {
 		throw new Error(
@@ -279,6 +302,10 @@ function normalizeInput(input: ShortLinkInput) {
 
 	if (!["http:", "https:"].includes(targetUrl.protocol)) {
 		throw new Error("Target URL must use http or https.")
+	}
+
+	if (targetUrl.username || targetUrl.password) {
+		throw new Error("Target URL must not include a username or password.")
 	}
 
 	const httpCode = Number(input.httpCode ?? 302)
@@ -300,13 +327,32 @@ function normalizeInput(input: ShortLinkInput) {
 		expiresAt = parsed.toISOString()
 	}
 
+	let passwordHash: string | null | undefined = null
+	const password = input.password?.trim() ?? ""
+	if (password.length > 0) {
+		passwordHash = hashLinkPassword(password)
+	} else if (options.preservePasswordOnEmpty) {
+		passwordHash = undefined
+	}
+
 	return {
 		expiresAt,
 		httpCode: httpCode as ManagedShortLink["httpCode"],
+		passwordHash,
 		slug,
 		status: status as ManagedShortLink["status"],
 		targetUrl: targetUrl.toString()
 	}
+}
+
+function hashLinkPassword(password: string): string {
+	if (password.length < 6) {
+		throw new Error("Password must be at least 6 characters.")
+	}
+
+	const salt = randomBytes(16).toString("base64url")
+	const key = scryptSync(password, salt, 32).toString("base64url")
+	return `s1:${salt}:${key}`
 }
 
 function toManagedShortLink(row: ManagedShortLinkRow): ManagedShortLink {

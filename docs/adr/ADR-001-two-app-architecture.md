@@ -12,7 +12,7 @@ A single app would mix these concerns, increasing risk on the redirect hot path.
 
 ## Decision
 Adopt two deployable applications:
-- Dashboard app on Remix Version 3 Preview for management workflows.
+- Dashboard app on Astro + Svelte for management workflows.
 - Redirect app on raw Bun.js for high-performance redirects.
 
 Both apps share one relational database and a common schema contract.

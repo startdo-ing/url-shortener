@@ -97,6 +97,16 @@ const HTTP_CODE_LABELS: Record<number, string> = {
 					<input name="expiresAt" type="datetime-local" />
 				</label>
 			</div>
+			<div class="form-row">
+				<label>
+					Password (optional)
+					<input
+						name="password"
+						placeholder="Leave empty for public access"
+						type="password"
+					/>
+				</label>
+			</div>
 			<div class="form-actions">
 				<button type="submit">Create short link</button>
 			</div>

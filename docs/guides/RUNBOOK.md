@@ -57,6 +57,12 @@ shortener system. Review and update this document after every incident.
    # Expect: HTTP 301/302/307
    ```
 
+7. Verify the health probe:
+   ```sh
+   curl http://localhost:8000/health
+   # Expect: {"status":"ok"}
+   ```
+
 ---
 
 ## 2. Redirect service is rate-limiting legitimate traffic (429 surge)
@@ -67,7 +73,7 @@ shortener system. Review and update this document after every incident.
 
 1. Check the `/metrics` endpoint for 429 volume:
    ```sh
-   curl http://localhost:8000/metrics | grep 429
+   curl -H "Authorization: Bearer $METRICS_BEARER_TOKEN" http://localhost:8000/metrics | grep 429
    ```
 
 2. Identify the source IPs from logs:
@@ -190,14 +196,19 @@ docker compose start redirect-service management-web
 
 ## 6. Metrics
 
-Both apps expose Prometheus-format metrics at `GET /metrics` (no authentication).
+Both apps expose Prometheus-format metrics at `GET /metrics`.
 
 ```sh
-curl http://localhost:8000/metrics   # redirect-service
-curl http://localhost:3000/metrics   # management-web
+curl http://localhost:8000/health
+curl -H "Authorization: Bearer $METRICS_BEARER_TOKEN" http://localhost:8000/metrics
+curl -H "Authorization: Bearer $METRICS_BEARER_TOKEN" http://localhost:3000/metrics
 ```
 
 Key metric: `http_requests_total{service, method, status}`
+
+Notes:
+- `redirect-service` metrics stay disabled unless `METRICS_BEARER_TOKEN` is configured.
+- `management-web` metrics stay disabled unless `METRICS_BEARER_TOKEN` is configured.
 
 Suggested alert thresholds:
 - **Error rate > 1%** over a 5-minute window: page on-call.

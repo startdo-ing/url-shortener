@@ -48,6 +48,13 @@ export function createUserRepository(database: Db) {
 		return user ? toViewer(user) : null
 	}
 
+	async function findFirstActiveAdmin(): Promise<Viewer | null> {
+		const user = await database.query.users.findFirst({
+			where: and(eq(users.role, "admin"), eq(users.isActive, true))
+		})
+		return user ? toViewer(user) : null
+	}
+
 	async function listUsers(): Promise<Viewer[]> {
 		const allUsers = await database.query.users.findMany()
 		return allUsers.map(toViewer).sort(compareUsers)
@@ -164,6 +171,7 @@ export function createUserRepository(database: Db) {
 		countActiveAdmins,
 		countLocalUsers,
 		createFirstAdminFromKeycloak,
+		findFirstActiveAdmin,
 		findViewerById,
 		listUsers,
 		updateUser,
@@ -177,6 +185,7 @@ export const countActiveAdmins = repository.countActiveAdmins
 export const countLocalUsers = repository.countLocalUsers
 export const createFirstAdminFromKeycloak =
 	repository.createFirstAdminFromKeycloak
+export const findFirstActiveAdmin = repository.findFirstActiveAdmin
 export const findViewerById = repository.findViewerById
 export const listUsers = repository.listUsers
 export const updateUser = repository.updateUser

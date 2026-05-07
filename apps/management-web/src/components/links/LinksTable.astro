@@ -24,6 +24,7 @@ const HTTP_CODE_LABELS: Record<number, string> = {
 			<tr>
 				<th>Link</th>
 				<th>Target</th>
+				<th>Password</th>
 				<th>Status</th>
 				<th>HTTP</th>
 				<th>Expires</th>
@@ -37,6 +38,7 @@ const HTTP_CODE_LABELS: Record<number, string> = {
 						<strong>{link.domainHost}/{link.slug}</strong>
 					</td>
 					<td>{link.targetUrl}</td>
+					<td>{link.passwordHash ? "Protected" : "Public"}</td>
 					<td>
 						<span class={`badge badge--${link.status}`}>{link.status}</span>
 					</td>
@@ -134,6 +136,16 @@ const HTTP_CODE_LABELS: Record<number, string> = {
 												name="expiresAt"
 												type="datetime-local"
 												value={link.expiresAt ? link.expiresAt.slice(0, 16) : ""}
+											/>
+										</label>
+									</div>
+									<div class="form-row">
+										<label>
+											Password (optional)
+											<input
+												name="password"
+												placeholder="Leave empty to keep current password"
+												type="password"
 											/>
 										</label>
 									</div>

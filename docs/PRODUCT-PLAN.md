@@ -14,7 +14,7 @@ Core principle:
 We will run two apps with one shared database:
 
 1. Dashboard app (management UI)
-- Framework: Remix Version 3 Preview
+- Framework: Astro + Svelte
 - Role: SSR dashboard for link and system management
 - Host example: short.anh.pw
 - Auth: Keycloak OIDC (self-hosted at https://auth.startdo.ing)
@@ -35,21 +35,15 @@ Rationale:
 
 ## 3. Frontend Framework Policy
 
-Remix Version 3 Preview is treated as production-ready for this project.
+Astro + Svelte is the production frontend framework for the dashboard app.
 
 Policy:
 - No rollback strategy is required.
-- If Remix 3 Preview blocks progress, we rewrite only the frontend app using another framework (for example TanStack Start).
-- Redirect app and database remain stable during frontend rewrite.
+- Redirect app and database remain stable and independent from frontend changes.
 
-Rewrite trigger definition:
-- A blocker persists for more than 2 consecutive milestones.
-- The blocker prevents delivery of core dashboard workflows.
-- The blocker has no practical workaround within acceptable complexity.
-
-Rewrite guardrails:
+Guardrails:
 - Keep domain logic and validation outside UI framework-specific code.
-- Keep dashboard API contract stable so FE can be replaced.
+- Keep dashboard API contract stable.
 - Keep route-level acceptance tests framework-agnostic where possible.
 
 ## 4. Engineering Principles
@@ -194,7 +188,7 @@ Exit criteria:
 - Redirect correctness test suite passes.
 - Latency target met in local load test: p99 < 50ms for a warm SQLite lookup on a single host machine.
 
-### Milestone 2: Dashboard MVP (Remix 3 Preview)
+### Milestone 2: Dashboard MVP (Astro + Svelte)
 
 Goal:
 - Deliver essential management workflows.
@@ -390,10 +384,9 @@ What must happen next because of this decision?
 Create these ADRs first:
 
 1. Two-app architecture with shared database
-2. Remix 3 Preview as production frontend framework
-3. Frontend rewrite strategy (TanStack Start as candidate)
-4. Redirect data access and caching strategy
-5. Click event capture model (inline vs async pipeline)
+2. Astro + Svelte as production frontend framework
+3. Redirect data access and caching strategy
+4. Click event capture model (inline vs async pipeline)
 
 ## 13. Execution Status (May 5, 2026)
 

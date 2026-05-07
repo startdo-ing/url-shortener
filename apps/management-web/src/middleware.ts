@@ -20,13 +20,41 @@ import {
 	type Viewer
 } from "./lib/models/user"
 import { logger } from "./lib/observability/logger"
-import { incrementCounter } from "./lib/observability/metrics"
+import { incrementCounter, recordDuration } from "./lib/observability/metrics"
 
-const protectedPaths = new Set(["/dashboard", "/domains", "/links", "/users"])
+const protectedPaths = new Set([
+	"/analytics",
+	"/dashboard",
+	"/domains",
+	"/links",
+	"/users"
+])
+
+// Simple per-IP rate limiter for auth routes (10 req / 60 s)
+const authRateLimiter = (() => {
+	const windows = new Map<string, number[]>()
+	const maxRequests = 10
+	const windowMs = 60_000
+	return {
+		isAllowed(ip: string): boolean {
+			const now = Date.now()
+			const cutoff = now - windowMs
+			const timestamps = (windows.get(ip) ?? []).filter((t) => t > cutoff)
+			if (timestamps.length >= maxRequests) {
+				windows.set(ip, timestamps)
+				return false
+			}
+			timestamps.push(now)
+			windows.set(ip, timestamps)
+			return true
+		}
+	}
+})()
 
 export const onRequest = defineMiddleware(async (context, next) => {
 	const { request, url } = context
 	const startedAt = Date.now()
+	const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID()
 
 	let response: Response
 	try {
@@ -35,7 +63,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
 		logger.error("unhandled error", {
 			method: request.method,
 			path: url.pathname,
-			error: error instanceof Error ? error.message : String(error)
+			error: error instanceof Error ? error.message : String(error),
+			requestId
 		})
 		response = new Response("Internal Server Error", { status: 500 })
 	}
@@ -45,8 +74,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
 		method: request.method,
 		path: url.pathname,
 		status: response.status,
-		durationMs
+		durationMs,
+		requestId
 	})
+	recordDuration(durationMs)
 	incrementCounter("http_requests_total", {
 		service: "management-web",
 		method: request.method,
@@ -63,6 +94,17 @@ async function routeRequest(
 	const { request, url } = context
 	const session = readSession(request)
 	const pathname = url.pathname
+
+	// Rate-limit auth endpoints to slow brute-force attempts
+	if (pathname.startsWith("/auth") || pathname === "/setup/first-admin") {
+		const ip =
+			request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+			request.headers.get("x-real-ip") ??
+			"unknown"
+		if (!authRateLimiter.isAllowed(ip)) {
+			return new Response("Too Many Requests", { status: 429 })
+		}
+	}
 
 	if (pathname === "/setup/first-admin") {
 		if (request.method === "POST") {
@@ -121,6 +163,15 @@ async function routeRequest(
 			session,
 			FLASH_ERROR_KEY,
 			"You do not have permission to manage links."
+		)
+		return redirectWithSession("/dashboard", session)
+	}
+
+	if (pathname === "/analytics" && !hasPermission(viewer, "analytics:view")) {
+		flash(
+			session,
+			FLASH_ERROR_KEY,
+			"You do not have permission to view analytics."
 		)
 		return redirectWithSession("/dashboard", session)
 	}

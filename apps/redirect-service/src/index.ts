@@ -1,3 +1,5 @@
+import { scryptSync, timingSafeEqual } from "node:crypto"
+
 import { createDb } from "@url-shortener/shared-db/client"
 import {
 	domains,
@@ -5,15 +7,34 @@ import {
 	clickEvents
 } from "@url-shortener/shared-db/schema"
 import type { Db } from "@url-shortener/shared-db/client"
-import { eq, and } from "drizzle-orm"
+import { eq, and, count, sql } from "drizzle-orm"
 
 import { logger } from "./logger.ts"
-import { getMetricsText, incrementCounter } from "./metrics.ts"
-import { rateLimiter } from "./rate-limiter.ts"
+import { getMetricsText, incrementCounter, recordDuration } from "./metrics.ts"
+import {
+	rateLimiter,
+	rateLimiter as defaultRateLimiter
+} from "./rate-limiter.ts"
 
 const DATABASE_PATH = Bun.env.DATABASE_PATH ?? "./dev.sqlite"
 const PORT = Number(Bun.env.PORT ?? 8000)
 const SLUG_PATTERN = /^[A-Za-z0-9_-]+$/
+const METRICS_BEARER_TOKEN = Bun.env.METRICS_BEARER_TOKEN?.trim() || null
+const CLICK_EVENT_RETENTION_DAYS = Number(
+	Bun.env.CLICK_EVENT_RETENTION_DAYS ?? 90
+)
+
+interface AppFetchOptions {
+	limiter?: typeof rateLimiter
+	metricsBearerToken?: string | null
+}
+
+export async function pruneClickEvents(db: Db, retentionDays: number) {
+	const cutoff = new Date(
+		Date.now() - retentionDays * 24 * 60 * 60 * 1000
+	).toISOString()
+	await db.delete(clickEvents).where(sql`${clickEvents.occurredAt} < ${cutoff}`)
+}
 
 if (import.meta.main) {
 	const db = createDb(DATABASE_PATH)
@@ -21,48 +42,117 @@ if (import.meta.main) {
 	// Prune stale rate-limit entries every 5 minutes
 	setInterval(() => rateLimiter.prune(), 5 * 60_000)
 
-	Bun.serve({
-		port: PORT,
-		async fetch(req: Request) {
-			const url = new URL(req.url)
-
-			// Metrics endpoint — unauthenticated, internal use only
-			if (req.method === "GET" && url.pathname === "/metrics") {
-				return new Response(getMetricsText(), {
-					headers: { "Content-Type": "text/plain; version=0.0.4" }
+	// Prune old click events once per day
+	setInterval(
+		async () => {
+			try {
+				await pruneClickEvents(db, CLICK_EVENT_RETENTION_DAYS)
+				logger.info("click event retention pruned", {
+					retentionDays: CLICK_EVENT_RETENTION_DAYS
+				})
+			} catch (error) {
+				logger.error("click event retention prune failed", {
+					error: error instanceof Error ? error.message : String(error)
 				})
 			}
+		},
+		24 * 60 * 60_000
+	)
 
-			const start = Date.now()
-			const response = await handleRedirectRequest(req, db)
-			const duration = Date.now() - start
-
-			logger.info("request", {
-				method: req.method,
-				path: url.pathname,
-				host: url.hostname,
-				status: response.status,
-				durationMs: duration
-			})
-
-			incrementCounter("http_requests_total", {
-				service: "redirect-service",
-				method: req.method,
-				status: String(response.status)
-			})
-
-			return response
-		}
+	const server = Bun.serve({
+		port: PORT,
+		fetch: createAppFetch(db, {
+			limiter: rateLimiter,
+			metricsBearerToken: METRICS_BEARER_TOKEN
+		})
 	})
 
 	logger.info("started", { port: PORT })
+
+	process.on("SIGTERM", () => {
+		logger.info("received SIGTERM, shutting down")
+		server.stop(true)
+		db.$client.close()
+		process.exit(0)
+	})
+}
+export function createAppFetch(db: Db, options: AppFetchOptions = {}) {
+	const limiter = options.limiter ?? rateLimiter
+	const metricsBearerToken = options.metricsBearerToken ?? null
+
+	return async function fetch(req: Request) {
+		const url = new URL(req.url)
+		const start = Date.now()
+		const requestId = req.headers.get("x-request-id") ?? crypto.randomUUID()
+
+		const internalResponse = await handleInternalRequest(
+			req,
+			db,
+			metricsBearerToken
+		)
+		const response =
+			internalResponse ?? (await handleRedirectRequest(req, db, limiter))
+		const duration = Date.now() - start
+
+		logger.info("request", {
+			method: req.method,
+			path: url.pathname,
+			host: url.hostname,
+			status: response.status,
+			durationMs: duration,
+			requestId
+		})
+
+		recordDuration(duration)
+		incrementCounter("http_requests_total", {
+			service: "redirect-service",
+			method: req.method,
+			status: String(response.status)
+		})
+
+		return response
+	}
 }
 
-import type { RateLimiterOptions } from "./rate-limiter.ts"
-import {
-	createRateLimiter,
-	rateLimiter as defaultRateLimiter
-} from "./rate-limiter.ts"
+export async function handleInternalRequest(
+	req: Request,
+	db: Db,
+	metricsBearerToken: string | null = null
+) {
+	const url = new URL(req.url)
+
+	if (req.method === "GET" && url.pathname === "/health") {
+		try {
+			await db.select({ total: count() }).from(domains)
+			return Response.json({ status: "ok" })
+		} catch (error) {
+			logger.error("health check failed", {
+				error: error instanceof Error ? error.message : String(error)
+			})
+			return Response.json({ status: "error" }, { status: 503 })
+		}
+	}
+
+	if (req.method === "GET" && url.pathname === "/metrics") {
+		if (!metricsBearerToken) {
+			return new Response("Not Found", { status: 404 })
+		}
+
+		const authorization = req.headers.get("authorization")
+		if (authorization !== `Bearer ${metricsBearerToken}`) {
+			return new Response("Unauthorized", {
+				status: 401,
+				headers: { "WWW-Authenticate": 'Bearer realm="metrics"' }
+			})
+		}
+
+		return new Response(getMetricsText(), {
+			headers: { "Content-Type": "text/plain; version=0.0.4" }
+		})
+	}
+
+	return null
+}
 
 export async function handleRedirectRequest(
 	req: Request,
@@ -119,8 +209,22 @@ export async function handleRedirectRequest(
 		return new Response("Gone", { status: 410 })
 	}
 
-	// Password-protected links are out of scope for Milestone 1.
-	if (link.passwordHash) return new Response("Not Found", { status: 404 })
+	if (link.passwordHash) {
+		const submittedPassword = await readPasswordFromRequest(req)
+		if (submittedPassword == null) {
+			return new Response(renderPasswordPrompt(host, slug), {
+				status: 401,
+				headers: { "Content-Type": "text/html; charset=utf-8" }
+			})
+		}
+
+		if (!verifyLinkPassword(submittedPassword, link.passwordHash)) {
+			return new Response(renderPasswordPrompt(host, slug, true), {
+				status: 401,
+				headers: { "Content-Type": "text/html; charset=utf-8" }
+			})
+		}
+	}
 
 	// Emit click event asynchronously — never blocks redirect
 	emitClickEvent(db, link.id, host, url.pathname, req).catch(() => {})
@@ -160,4 +264,82 @@ async function hashIp(ip: string): Promise<string> {
 	return Array.from(new Uint8Array(hashBuffer))
 		.map((b) => b.toString(16).padStart(2, "0"))
 		.join("")
+}
+
+async function readPasswordFromRequest(req: Request): Promise<string | null> {
+	if (req.method !== "POST") {
+		return null
+	}
+
+	const contentType = req.headers.get("content-type") ?? ""
+	if (!contentType.includes("application/x-www-form-urlencoded")) {
+		return null
+	}
+
+	const formData = await req.formData()
+	const password = formData.get("password")
+	if (typeof password !== "string") {
+		return null
+	}
+
+	const trimmed = password.trim()
+	return trimmed.length > 0 ? trimmed : null
+}
+
+function verifyLinkPassword(password: string, storedHash: string): boolean {
+	const [version, salt, expectedKey] = storedHash.split(":")
+	if (version !== "s1" || !salt || !expectedKey) {
+		return false
+	}
+
+	const actual = scryptSync(password, salt, 32).toString("base64url")
+	const expectedBuffer = Buffer.from(expectedKey)
+	const actualBuffer = Buffer.from(actual)
+	if (expectedBuffer.length !== actualBuffer.length) {
+		return false
+	}
+
+	return timingSafeEqual(expectedBuffer, actualBuffer)
+}
+
+function renderPasswordPrompt(
+	host: string,
+	slug: string,
+	invalid = false
+): string {
+	const escapedHost = escapeHtml(host)
+	const escapedSlug = escapeHtml(slug)
+	const action = `/${encodeURIComponent(slug)}`
+
+	return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Protected Link</title>
+</head>
+<body>
+  <main>
+    <h1>Protected Link</h1>
+    <p>Enter password to continue to ${escapedHost}/${escapedSlug}.</p>
+    ${invalid ? '<p style="color:#b91c1c">Invalid password.</p>' : ""}
+    <form method="post" action="${action}">
+      <label>
+        Password
+        <input name="password" type="password" required />
+      </label>
+      <button type="submit">Continue</button>
+    </form>
+  </main>
+</body>
+</html>`
+}
+
+function escapeHtml(value: string): string {
+	return value
+		.replaceAll("&", "&amp;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("'", "&#39;")
 }

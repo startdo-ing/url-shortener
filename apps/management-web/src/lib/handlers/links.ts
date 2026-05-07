@@ -72,6 +72,7 @@ function readLinkInput(formData: FormData): ShortLinkInput {
 		domainId: readRequiredValue(formData, "domainId"),
 		expiresAt: readOptionalValue(formData.get("expiresAt")),
 		httpCode: Number(formData.get("httpCode") ?? 302),
+		password: readOptionalValue(formData.get("password")),
 		slug: readRequiredValue(formData, "slug"),
 		status: status === "disabled" ? "disabled" : "active",
 		targetUrl: readRequiredValue(formData, "targetUrl")

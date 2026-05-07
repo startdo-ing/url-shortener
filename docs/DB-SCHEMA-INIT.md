@@ -2,7 +2,7 @@
 
 ## Purpose
 Define the initial relational schema contract shared by:
-- Dashboard app (Remix 3 Preview)
+- Dashboard app (Astro + Svelte)
 - Redirect app (Bun.js)
 
 ## Database Engine
