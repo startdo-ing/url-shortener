@@ -34,6 +34,26 @@ The architecture is intentionally split so redirect latency stays isolated from 
 - API auth via session cookie or bearer token (`MANAGEMENT_API_TOKEN`)
 - Health + metrics endpoints for operational monitoring
 
+### Feature Matrix
+
+| Feature | App | Endpoint / Page |
+| --- | --- | --- |
+| Short-link redirect | `redirect-service` | `GET /<slug>` |
+| Password-protected redirect | `redirect-service` | `GET /<slug>`, `POST /<slug>` |
+| Expired / disabled link enforcement | `redirect-service` | `GET /<slug>` |
+| Click-event capture | `redirect-service` | redirect request path |
+| Redirect metrics | `redirect-service` | `GET /metrics` |
+| Redirect health probe | `redirect-service` | `GET /health` |
+| OIDC sign-in | `management-web` | `GET /auth` |
+| First-admin bootstrap | `management-web` | `/setup/first-admin` |
+| Dashboard home | `management-web` | `GET /dashboard` |
+| Domain management | `management-web` | `/domains` |
+| Link management UI | `management-web` | `/links` |
+| Analytics dashboard | `management-web` | `GET /analytics` |
+| Public links API | `management-web` | `/api/links`, `/api/links/:id` |
+| Management metrics | `management-web` | `GET /metrics` |
+| Management health probe | `management-web` | `GET /health` |
+
 ## Requirements
 
 - Bun `1.3+`
@@ -42,19 +62,21 @@ The architecture is intentionally split so redirect latency stays isolated from 
 
 ## Local Setup
 
-1. Install workspace dependencies:
+1. Install dependencies:
 
 ```sh
 bun install
 ```
 
-2. Run database migrations:
+2. Run migrations:
 
 ```sh
 bun run db:migrate
 ```
 
-3. Configure `apps/management-web` environment variables:
+3. Set environment variables.
+
+`apps/management-web`:
 
 ```env
 APP_URL=http://localhost:3000
@@ -68,7 +90,7 @@ MANAGEMENT_API_TOKEN=replace-with-a-random-api-token
 SESSION_SECRET=replace-with-a-random-string-at-least-32-characters-long
 ```
 
-4. Configure `apps/redirect-service` environment variables:
+`apps/redirect-service`:
 
 ```env
 DATABASE_PATH=../../dev.sqlite
@@ -77,15 +99,16 @@ METRICS_BEARER_TOKEN=replace-with-an-internal-scrape-token
 CLICK_EVENT_RETENTION_DAYS=90
 ```
 
-5. Start both apps:
+4. Start both apps:
 
 ```sh
 bun run dev
 ```
 
-Management UI: `http://localhost:3000`
+Endpoints:
 
-Redirect service: `http://localhost:8000`
+- Management UI: `http://localhost:3000`
+- Redirect service: `http://localhost:8000`
 
 ## Useful Commands
 
@@ -100,29 +123,48 @@ bun run db:backup
 
 ## Runtime Endpoints
 
-### redirect-service
+### Human UI
 
-- `GET /<slug>`: resolve and redirect short links (or render password form for protected links)
-- `POST /<slug>`: submit password for protected links
-- `GET /health`: database-backed health probe
-- `GET /metrics`: Prometheus metrics, disabled unless `METRICS_BEARER_TOKEN` is set, then requires `Authorization: Bearer <token>`
+#### management-web
 
-### management-web
+- `GET /auth`: Open the Keycloak sign-in flow.
+- `GET /dashboard`: Open the authenticated dashboard.
+- `GET /links`: Open the link management UI.
+- `GET /domains`: Open the domain management UI.
+- `GET /users`: Open the user management UI (admin only).
+- `GET /analytics`: Open the analytics dashboard.
+- `GET /setup/first-admin`: Open the first-admin bootstrap flow.
 
-- `GET /auth`: Keycloak sign-in entrypoint
-- `GET /dashboard`: authenticated dashboard landing page
-- `GET /analytics`: click-event dashboard
-- `GET /health`: database-backed health probe
-- `GET /metrics`: Prometheus metrics, disabled unless `METRICS_BEARER_TOKEN` is set, then requires `Authorization: Bearer <token>`
-- `GET /api/links`: list links (session auth or `Authorization: Bearer <MANAGEMENT_API_TOKEN>`)
-- `POST /api/links`: create link
-- `GET /api/links/:id`: get one link
-- `PATCH /api/links/:id`: update link
-- `DELETE /api/links/:id`: delete link
+#### redirect-service
+
+- `GET /<slug>`: Resolve a short link or render the password prompt.
+- `POST /<slug>`: Submit the password for a protected link.
+
+### Machine API
+
+#### management-web
+
+- `GET /api/links`: List links. Auth via session cookie or `Authorization: Bearer <MANAGEMENT_API_TOKEN>`.
+- `POST /api/links`: Create a link.
+- `GET /api/links/:id`: Get one link.
+- `PATCH /api/links/:id`: Update a link.
+- `DELETE /api/links/:id`: Delete a link.
+
+### Ops Endpoints
+
+#### redirect-service
+
+- `GET /health`: Run a database-backed health probe.
+- `GET /metrics`: Return Prometheus metrics. Disabled unless `METRICS_BEARER_TOKEN` is set, then requires `Authorization: Bearer <token>`.
+
+#### management-web
+
+- `GET /health`: Run a database-backed health probe.
+- `GET /metrics`: Return Prometheus metrics. Disabled unless `METRICS_BEARER_TOKEN` is set, then requires `Authorization: Bearer <token>`.
 
 ### Public API Quickstart
 
-Use the management API with either a signed-in session cookie (browser) or an API token.
+Use the management API with either a signed-in session cookie or an API token.
 
 ```sh
 export API_TOKEN="replace-with-management-api-token"
@@ -147,12 +189,12 @@ curl -s -X POST http://localhost:3000/api/links \
 	}'
 ```
 
-When `MANAGEMENT_API_TOKEN` is configured, requests authenticated by this token execute as the first active admin user in the local user table.
+When `MANAGEMENT_API_TOKEN` is set, token-authenticated requests run as the first active admin user in the local user table.
 
 ## Testing
 
 - Redirect-service behavior is covered with focused request-handler tests.
-- Management link/domain/user repositories use SQLite-backed integration tests.
+- Management repositories use SQLite-backed integration tests.
 - Run app-local tests when working on a specific surface:
 
 ```sh
