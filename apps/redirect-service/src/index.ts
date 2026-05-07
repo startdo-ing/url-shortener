@@ -229,8 +229,18 @@ export async function handleRedirectRequest(
 	// Emit click event asynchronously — never blocks redirect
 	emitClickEvent(db, link.id, host, url.pathname, req).catch(() => {})
 
+	// Password unlock submits this endpoint via POST. If we forward 307/308, the
+	// browser preserves POST to the target URL, which can return 404/405 on sites
+	// that only support GET pages. 303 forces the follow-up request to use GET.
+	const redirectStatus =
+		link.passwordHash &&
+		req.method === "POST" &&
+		(link.httpCode === 307 || link.httpCode === 308)
+			? 303
+			: link.httpCode
+
 	return new Response(null, {
-		status: link.httpCode,
+		status: redirectStatus,
 		headers: { Location: link.targetUrl }
 	})
 }

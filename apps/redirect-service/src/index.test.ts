@@ -115,6 +115,27 @@ describe("handleRedirectRequest", () => {
 		expect(res.headers.get("location")).toBe("https://example.com")
 	})
 
+	it("uses 303 after password POST when link code is 307", async () => {
+		const db = createMockDb({
+			domain: { id: "domain_1" },
+			link: {
+				...activeLink,
+				passwordHash: createPasswordHash("secret123"),
+				httpCode: 307
+			}
+		})
+		const req = new Request("https://c.anh.pw/abc123", {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: new URLSearchParams({ password: "secret123" }).toString()
+		})
+
+		const res = await handleRedirectRequest(req, db)
+
+		expect(res.status).toBe(303)
+		expect(res.headers.get("location")).toBe("https://example.com")
+	})
+
 	it("returns 410 for expired links", async () => {
 		const db = createMockDb({
 			domain: { id: "domain_1" },
