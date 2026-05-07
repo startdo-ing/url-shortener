@@ -4,7 +4,7 @@ import { migrate } from "drizzle-orm/bun-sqlite/migrator"
 import { createDb } from "@url-shortener/shared-db/client"
 import { domains, users } from "@url-shortener/shared-db/schema"
 
-import { createLinkRepository } from "./link"
+import { createLinkRepository, formatShortLinkUrl } from "./link"
 
 const migrationsFolder = new URL(
 	"../../../../../packages/shared-db/migrations",
@@ -12,6 +12,18 @@ const migrationsFolder = new URL(
 ).pathname
 
 describe("createLinkRepository", () => {
+	it("formats localhost links with the redirect-service port", () => {
+		expect(formatShortLinkUrl("localhost", "docs")).toBe(
+			"http://localhost:8000/docs"
+		)
+	})
+
+	it("formats non-localhost links with https", () => {
+		expect(formatShortLinkUrl("go.example.com", "docs")).toBe(
+			"https://go.example.com/docs"
+		)
+	})
+
 	it("creates and lists short links with filters", async () => {
 		const db = createDb(
 			`/tmp/url-shortener-links-${crypto.randomUUID()}.sqlite`

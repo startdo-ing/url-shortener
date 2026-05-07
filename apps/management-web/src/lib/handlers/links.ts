@@ -7,6 +7,7 @@ import { flash, redirectWithSession } from "../auth/session"
 import {
 	createLink,
 	deleteLink,
+	formatShortLinkUrl,
 	updateLink,
 	type ShortLinkInput
 } from "../models/link"
@@ -28,7 +29,7 @@ export async function handleLinkMutation(
 				flash(
 					session,
 					FLASH_NOTICE_KEY,
-					`Created ${created.domainHost}/${created.slug}.`
+					`Created ${formatShortLinkUrl(created.domainHost, created.slug)}.`
 				)
 				break
 			}
@@ -38,7 +39,7 @@ export async function handleLinkMutation(
 				flash(
 					session,
 					FLASH_NOTICE_KEY,
-					`Updated ${updated.domainHost}/${updated.slug}.`
+					`Updated ${formatShortLinkUrl(updated.domainHost, updated.slug)}.`
 				)
 				break
 			}

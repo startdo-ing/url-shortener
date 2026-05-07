@@ -44,6 +44,10 @@ export interface DomainDnsVerificationConfig {
 	expectedIpv6Addresses: string[]
 }
 
+interface CreateDomainOptions {
+	allowLocalhost?: boolean
+}
+
 export function createDomainRepository(database: Db) {
 	async function listDomains(): Promise<ManagedDomain[]> {
 		const [domainRows, linkCounts] = await Promise.all([
@@ -72,9 +76,10 @@ export function createDomainRepository(database: Db) {
 
 	async function createDomain(
 		hostInput: string,
-		actorUserId: string
+		actorUserId: string,
+		options: CreateDomainOptions = {}
 	): Promise<ManagedDomain> {
-		const host = normalizeHost(hostInput)
+		const host = normalizeHost(hostInput, options)
 		const timestamp = new Date().toISOString()
 		const domainId = crypto.randomUUID()
 
@@ -339,7 +344,7 @@ function normalizeDnsName(value: string) {
 	return value.trim().toLowerCase().replace(/\.$/, "")
 }
 
-function normalizeHost(hostInput: string) {
+function normalizeHost(hostInput: string, options: CreateDomainOptions = {}) {
 	const rawHost = hostInput.trim().toLowerCase()
 	if (rawHost.length === 0) {
 		throw new Error("Domain host is required.")
@@ -350,6 +355,14 @@ function normalizeHost(hostInput: string) {
 	}
 
 	const host = normalizeDnsName(rawHost)
+	if (host === "localhost") {
+		if (options.allowLocalhost === true) {
+			return host
+		}
+
+		throw new Error("Domain must be a valid hostname.")
+	}
+
 	if (!HOST_PATTERN.test(host)) {
 		throw new Error("Domain must be a valid hostname.")
 	}

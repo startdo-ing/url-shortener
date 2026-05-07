@@ -29,6 +29,34 @@ describe("createDomainRepository", () => {
 		expect(created.verificationStatus).toBe("pending")
 	})
 
+	it("allows localhost domains when explicitly enabled", async () => {
+		const db = createDb(
+			`/tmp/url-shortener-domains-${crypto.randomUUID()}.sqlite`
+		)
+		migrate(db, { migrationsFolder })
+		const repository = createDomainRepository(db)
+		const actorUserId = await seedUser(db)
+
+		const created = await repository.createDomain("localhost", actorUserId, {
+			allowLocalhost: true
+		})
+
+		expect(created.host).toBe("localhost")
+	})
+
+	it("rejects localhost domains by default", async () => {
+		const db = createDb(
+			`/tmp/url-shortener-domains-${crypto.randomUUID()}.sqlite`
+		)
+		migrate(db, { migrationsFolder })
+		const repository = createDomainRepository(db)
+		const actorUserId = await seedUser(db)
+
+		await expect(
+			repository.createDomain("localhost", actorUserId)
+		).rejects.toThrow("Domain must be a valid hostname.")
+	})
+
 	it("blocks deleting a domain that still has short links", async () => {
 		const db = createDb(
 			`/tmp/url-shortener-domains-${crypto.randomUUID()}.sqlite`

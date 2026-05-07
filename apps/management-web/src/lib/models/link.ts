@@ -47,6 +47,12 @@ export interface LinkDomainOption {
 	isActive: boolean
 }
 
+export function formatShortLinkUrl(domainHost: string, slug: string) {
+	const protocol = domainHost === "localhost" ? "http" : "https"
+	const host = domainHost === "localhost" ? "localhost:8000" : domainHost
+	return `${protocol}://${host}/${slug}`
+}
+
 type ManagedShortLinkRow = Omit<ManagedShortLink, "httpCode"> & {
 	httpCode: number
 }

@@ -1,5 +1,9 @@
 ---
-import type { ManagedShortLink, LinkDomainOption } from "../../lib/models/link"
+import {
+	formatShortLinkUrl,
+	type ManagedShortLink,
+	type LinkDomainOption
+} from "../../lib/models/link"
 
 interface Props {
 	links: ManagedShortLink[]
@@ -7,12 +11,6 @@ interface Props {
 }
 
 const { links, domains } = Astro.props
-
-const HTTP_CODE_LABELS: Record<number, string> = {
-	301: "301 Moved Permanently",
-	302: "302 Found",
-	307: "307 Temporary Redirect"
-}
 ---
 
 <h2>Existing Links</h2>
@@ -24,7 +22,6 @@ const HTTP_CODE_LABELS: Record<number, string> = {
 			<tr>
 				<th>Link</th>
 				<th>Target</th>
-				<th>Password</th>
 				<th>Status</th>
 				<th>HTTP</th>
 				<th>Expires</th>
@@ -34,20 +31,44 @@ const HTTP_CODE_LABELS: Record<number, string> = {
 		<tbody>
 			{links.map((link) => (
 				<tr>
+					{(() => {
+						const shortUrl = formatShortLinkUrl(link.domainHost, link.slug)
+						const isProtected = link.passwordHash != null
+
+						return (
+							<>
 					<td>
-						<strong>{link.domainHost}/{link.slug}</strong>
+						<a
+							class="table-link"
+							href={shortUrl}
+							rel="noreferrer"
+							target="_blank"
+						>
+							<span aria-hidden="true" class="table-link__icon">
+								{isProtected ? "🔑" : "🌍"}
+							</span>
+							<strong>{shortUrl}</strong>
+						</a>
 					</td>
-					<td>{link.targetUrl}</td>
-					<td>{link.passwordHash ? "Protected" : "Public"}</td>
+					<td>
+						<a
+							class="table-link"
+							href={link.targetUrl}
+							rel="noreferrer"
+							target="_blank"
+						>
+							{link.targetUrl}
+						</a>
+					</td>
 					<td>
 						<span class={`badge badge--${link.status}`}>{link.status}</span>
 					</td>
-					<td>{HTTP_CODE_LABELS[link.httpCode] ?? link.httpCode}</td>
+					<td>{link.httpCode}</td>
 					<td>{link.expiresAt ?? "—"}</td>
 					<td>
 						<div class="row-actions">
-							<details>
-								<summary>Edit</summary>
+							<details class="row-actions__details">
+								<summary class="row-actions__summary">Edit</summary>
 								<form action="/links" method="post">
 									<input name="intent" type="hidden" value="update" />
 									<input name="linkId" type="hidden" value={link.id} />
@@ -101,7 +122,7 @@ const HTTP_CODE_LABELS: Record<number, string> = {
 														type="radio"
 														value={String(code)}
 													/>
-													{HTTP_CODE_LABELS[code]}
+													{code}
 												</label>
 											))}
 										</div>
@@ -159,13 +180,16 @@ const HTTP_CODE_LABELS: Record<number, string> = {
 								<input
 									name="label"
 									type="hidden"
-									value={`${link.domainHost}/${link.slug}`}
+									value={shortUrl}
 								/>
 								<input name="linkId" type="hidden" value={link.id} />
 								<button data-variant="secondary" type="submit">Delete</button>
 							</form>
 						</div>
 					</td>
+							</>
+						)
+					})()}
 				</tr>
 			))}
 		</tbody>

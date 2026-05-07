@@ -21,13 +21,15 @@ export async function handleDomainMutation(
 ): Promise<Response> {
 	const formData = await request.formData()
 	const intent = String(formData.get("intent") ?? "")
+	const allowLocalhost = shouldAllowLocalhostDomain(request.url)
 
 	try {
 		switch (intent) {
 			case "create": {
 				const created = await createDomain(
 					readRequiredValue(formData, "host"),
-					viewer.id
+					viewer.id,
+					{ allowLocalhost }
 				)
 				flash(session, FLASH_NOTICE_KEY, `Added ${created.host}.`)
 				break
@@ -86,4 +88,16 @@ export async function handleDomainMutation(
 	}
 
 	return redirectWithSession("/domains", session)
+}
+
+function shouldAllowLocalhostDomain(requestUrl: string) {
+	try {
+		const url = new URL(requestUrl)
+		const host = url.hostname.toLowerCase()
+		const isLocalHost =
+			host === "localhost" || host === "127.0.0.1" || host === "::1"
+		return isLocalHost && url.pathname === "/domains"
+	} catch {
+		return false
+	}
 }
