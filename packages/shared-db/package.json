@@ -6,7 +6,10 @@
   "scripts": {
     "migrate": "bun run ./migrate.ts",
     "backup": "bun run ./backup.ts",
-    "studio": "bunx drizzle-kit studio"
+    "studio": "bunx drizzle-kit studio",
+    "typecheck": "tsgo -p tsconfig.json --noEmit",
+    "lint": "biome lint client.ts schema.ts drizzle.config.ts migrate.ts backup.ts",
+    "format": "biome format client.ts schema.ts drizzle.config.ts migrate.ts backup.ts --write"
   },
   "exports": {
     "./schema": "./schema.ts",

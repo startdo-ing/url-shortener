@@ -7,7 +7,9 @@
     "build": "astro build",
     "start": "HOST=0.0.0.0 PORT=3000 bun ./dist/server/entry.mjs",
     "test": "bun test",
-    "typecheck": "tsgo -p tsconfig.json --noEmit"
+    "typecheck": "tsgo -p tsconfig.json --noEmit",
+    "lint": "biome lint src astro.config.mjs",
+    "format": "biome format src astro.config.mjs --write"
   },
   "dependencies": {
     "@astrojs/node": "^10.0.6",

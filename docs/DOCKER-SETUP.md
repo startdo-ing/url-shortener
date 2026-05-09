@@ -257,7 +257,7 @@ sqlite> .quit
 
 | Environment | Database | Location | Notes |
 |---|---|---|---|
-| Local dev | `dev.sqlite` | Repo root | Uses `bun run dev:redirect` and `bun run dev:web` |
+| Local dev | `dev.sqlite` | Repo root | Uses `bun run redirect:dev` and `bun run web:dev` |
 | Docker | `db.sqlite` | `/data` volume | Uses `docker compose up` |
 
 **Do NOT mix them** — local dev and Docker use separate databases. 

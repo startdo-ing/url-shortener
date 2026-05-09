@@ -102,8 +102,8 @@ CLICK_EVENT_RETENTION_DAYS=90
 4. Start each app in its own terminal:
 
 ```sh
-bun run dev:redirect
-bun run dev:web
+bun run redirect:dev
+bun run web:dev
 ```
 
 Endpoints:
@@ -114,13 +114,18 @@ Endpoints:
 ## Useful Commands
 
 ```sh
-bun run dev:redirect
-bun run dev:web
+bun run redirect:dev
+bun run web:dev
+bun run redirect:lint
+bun run web:lint
+bun run db:lint
+bun run redirect:typecheck
+bun run web:typecheck
+bun run db:typecheck
 bun run test
-bun run lint
-bun run typecheck
 bun run check-all
 bun run db:backup
+bun run db:studio
 ```
 
 ## Runtime Endpoints

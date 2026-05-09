@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/index.ts"
+    "start": "bun run src/index.ts",
+    "test": "bun test --pass-with-no-tests",
+    "typecheck": "tsgo -p tsconfig.json --noEmit",
+    "lint": "biome lint src",
+    "format": "biome format src --write"
   },
   "dependencies": {
     "@url-shortener/shared-db": "workspace:*",
