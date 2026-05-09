@@ -3,6 +3,7 @@ import Layout from "../../components/Layout.astro"
 import FlashBanners from "../../components/ui/FlashBanners.astro"
 import { RETURN_TO_PARAM } from "../../lib/auth/constants"
 import { getAuthDiagnostics } from "../../lib/auth/config"
+import { logger } from "../../lib/observability/logger"
 import { loadPageContext } from "../../lib/page"
 
 const { viewer, error, notice } = await loadPageContext(
@@ -11,6 +12,14 @@ const { viewer, error, notice } = await loadPageContext(
 )
 const diagnostics = getAuthDiagnostics()
 const returnTo = Astro.url.searchParams.get(RETURN_TO_PARAM)
+
+if (import.meta.env.DEV) {
+	logger.info("auth page diagnostics", {
+		configured: diagnostics.configured,
+		issuer: diagnostics.issuer,
+		errors: diagnostics.errors
+	})
+}
 
 const loginUrl = new URL("/auth/login", Astro.url)
 if (returnTo) {
@@ -30,19 +39,16 @@ if (returnTo) {
 			</p>
 		) : diagnostics.configured ? (
 			<>
-				<p>Keycloak is configured and ready for OIDC sign-in.</p>
-				<p>
-					<a href={`${loginUrl.pathname}${loginUrl.search}`}>Sign in with Keycloak</a>
-				</p>
-				{diagnostics.issuer ? <p>Issuer: {diagnostics.issuer}</p> : null}
+				<p>Sign in to continue.</p>
+				<form action={loginUrl.pathname} method="get">
+					{returnTo ? (
+						<input type="hidden" name={RETURN_TO_PARAM} value={returnTo} />
+					) : null}
+					<button type="submit">Sign in with SSO</button>
+				</form>
 			</>
 		) : (
-			<>
-				<p>Keycloak configuration is incomplete.</p>
-				<ul>
-					{diagnostics.errors.map((err) => <li>{err}</li>)}
-				</ul>
-			</>
+			<p>The system is not ready. Please try again later.</p>
 		)}
 	</section>
 </Layout>

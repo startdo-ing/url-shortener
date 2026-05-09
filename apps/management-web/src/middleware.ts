@@ -29,23 +29,33 @@ const protectedPaths = new Set([
 	"/users"
 ])
 
-// Simple per-IP rate limiter for auth routes (10 req / 60 s)
+// Per-IP rate limiter for auth routes: 30 requests per 60s to allow multiple auth flows while protecting against brute-force
 const authRateLimiter = (() => {
 	const windows = new Map<string, number[]>()
-	const maxRequests = 10
+	const maxRequests = 30
 	const windowMs = 60_000
 	return {
-		isAllowed(ip: string): boolean {
+		isAllowed(ip: string, pathname: string): boolean {
 			const now = Date.now()
 			const cutoff = now - windowMs
 			const timestamps = (windows.get(ip) ?? []).filter((t) => t > cutoff)
-			if (timestamps.length >= maxRequests) {
-				windows.set(ip, timestamps)
-				return false
+			const allowed = timestamps.length < maxRequests
+			
+			if (!allowed) {
+				logger.warn("rate limit exceeded", {
+					ip,
+					pathname,
+					requestCount: timestamps.length,
+					maxRequests
+				})
 			}
-			timestamps.push(now)
-			windows.set(ip, timestamps)
-			return true
+			
+			if (allowed) {
+				timestamps.push(now)
+				windows.set(ip, timestamps)
+			}
+			
+			return allowed
 		}
 	}
 })()
@@ -100,7 +110,12 @@ async function routeRequest(
 			request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
 			request.headers.get("x-real-ip") ??
 			"unknown"
-		if (!authRateLimiter.isAllowed(ip)) {
+		if (!authRateLimiter.isAllowed(ip, pathname)) {
+			logger.warn("auth rate limit triggered", {
+				ip,
+				pathname,
+				method: request.method
+			})
 			return new Response("Too Many Requests", { status: 429 })
 		}
 	}
