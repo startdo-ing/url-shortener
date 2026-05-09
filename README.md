@@ -99,10 +99,11 @@ METRICS_BEARER_TOKEN=replace-with-an-internal-scrape-token
 CLICK_EVENT_RETENTION_DAYS=90
 ```
 
-4. Start both apps:
+4. Start each app in its own terminal:
 
 ```sh
-bun run dev
+bun run dev:redirect
+bun run dev:web
 ```
 
 Endpoints:
@@ -113,7 +114,8 @@ Endpoints:
 ## Useful Commands
 
 ```sh
-bun run dev
+bun run dev:redirect
+bun run dev:web
 bun run test
 bun run lint
 bun run typecheck

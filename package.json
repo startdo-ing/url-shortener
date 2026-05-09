@@ -3,12 +3,12 @@
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"@types/bun": "^1.3.13",
-		"@typescript/native-preview": "^7.0.0-dev.20260504.1",
-		"concurrently": "^9.2.1"
+		"@typescript/native-preview": "^7.0.0-dev.20260504.1"
 	},
 	"private": true,
 	"scripts": {
-		"dev": "concurrently --kill-others --kill-others-on-fail --names \"redirect,web\" --prefix-colors \"cyan,magenta\" \"cd apps/redirect-service && bun run dev\" \"cd apps/management-web && bun run dev\"",
+		"dev:redirect": "cd apps/redirect-service && bun run dev",
+		"dev:web": "cd apps/management-web && bun run dev",
 		"db:migrate": "cd packages/shared-db && DATABASE_PATH=$(pwd)/../../dev.sqlite bun run migrate",
 		"db:backup": "cd packages/shared-db && bun run backup",
 		"tsgo": "tsgo",
