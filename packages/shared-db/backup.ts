@@ -27,7 +27,7 @@ const backupPath = join(backupDir, `db-${timestamp}.sqlite`)
 mkdirSync(backupDir, { recursive: true })
 
 const db = new Database(databasePath, { readonly: true })
-db.run(`PRAGMA wal_checkpoint(FULL)`)
+db.run("PRAGMA wal_checkpoint(FULL)")
 
 // @ts-expect-error: Bun's Database type exposes .backup() at runtime but it is not in the d.ts yet
 db.backup(backupPath)
