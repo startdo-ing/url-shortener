@@ -1,11 +1,5 @@
 <script lang="ts">
-interface DomainOption {
-	id: string
-	host: string
-}
-
 interface Props {
-	domains: DomainOption[]
 	selectedDomainId?: string
 	selectedStatus?: string
 	query?: string
@@ -14,7 +8,6 @@ interface Props {
 }
 
 const {
-	domains,
 	selectedDomainId,
 	selectedStatus,
 	query = "",
@@ -38,16 +31,8 @@ function handleSearchInput() {
 </script>
 
 <form bind:this={formEl} action="/dashboard" method="get" class="dashboard-toolbar" id="dashboard-toolbar">
+	<input name="domainId" type="hidden" value={selectedDomainId ?? ""} />
 	<div class="dashboard-toolbar__left">
-		<label>
-			Domain
-			<select name="domainId" onchange={submitForm}>
-				<option value="" selected={!selectedDomainId}>All domains</option>
-				{#each domains as domain (domain.id)}
-					<option value={domain.id} selected={selectedDomainId === domain.id}>{domain.host}</option>
-				{/each}
-			</select>
-		</label>
 		<label>
 			Status
 			<select name="status" onchange={submitForm}>

@@ -1,6 +1,7 @@
 ---
 import Layout from "../components/Layout.astro"
 import CreateLinkDialog from "../components/links/CreateLinkDialog.astro"
+import DashboardDomainFilter from "../components/links/DashboardDomainFilter.astro"
 import DashboardToolbar from "../components/links/DashboardToolbar.svelte"
 import LinksTable from "../components/links/LinksTable.astro"
 import FlashBanners from "../components/ui/FlashBanners.astro"
@@ -78,21 +79,33 @@ const linksWithClicks = visibleLinks.map((link) => ({
 			</article>
 		</div>
 
-		<div class="card card--section">
+		<div class="dashboard-top-controls">
+			<DashboardDomainFilter
+				domains={domains}
+				pageSize={pageSize}
+				query={filters.query}
+				selectedDomainId={filters.domainId}
+				selectedStatus={filters.status}
+			/>
+			<CreateLinkDialog
+				actionPath="/dashboard"
+				domains={domains}
+				returnTo={`/dashboard${Astro.url.search}`}
+			/>
+		</div>
+
+		<div
+			class="card card--section dashboard-links-block"
+			style="box-shadow: inset 0 0 0 1px rgba(140, 135, 125, 0.35)"
+		>
 			<div class="dashboard-toolbar-wrap">
 				<DashboardToolbar
 					client:load
-					domains={domains}
 					pageSizes={PAGE_SIZES}
 					pageSize={pageSize}
 					selectedDomainId={filters.domainId}
 					selectedStatus={filters.status}
 					query={filters.query}
-				/>
-				<CreateLinkDialog
-					actionPath="/dashboard"
-					domains={domains}
-					returnTo={`/dashboard${Astro.url.search}`}
 				/>
 			</div>
 

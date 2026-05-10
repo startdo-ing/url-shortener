@@ -20,7 +20,10 @@ const HTTP_CODE_LABELS: Record<number, string> = {
 
 
 <div class="create-link-dialog-trigger">
-	<button id="create-link-btn" type="button">Create Link</button>
+	<button aria-label="Create Link" id="create-link-btn" type="button">
+		<span aria-hidden="true" class="create-link-dialog-trigger__icon">+</span>
+		<span class="create-link-dialog-trigger__label">Create Link</span>
+	</button>
 </div>
 
 <dialog id="create-link-dialog">

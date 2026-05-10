@@ -1,0 +1,33 @@
+---
+import type { LinkDomainOption } from "../../lib/models/link"
+
+interface Props {
+	domains: LinkDomainOption[]
+	selectedDomainId?: string
+	selectedStatus?: string
+	query?: string
+	pageSize: number
+}
+
+const {
+	domains,
+	selectedDomainId,
+	selectedStatus,
+	query,
+	pageSize
+}: Props = Astro.props
+---
+
+<form action="/dashboard" class="dashboard-domain-filter" method="get">
+	<input name="pageSize" type="hidden" value={String(pageSize)} />
+	{selectedStatus ? <input name="status" type="hidden" value={selectedStatus} /> : null}
+	{query ? <input name="query" type="hidden" value={query} /> : null}
+	<select aria-label="Filter by domain" name="domainId" onchange="this.form?.requestSubmit()">
+		<option value="" selected={!selectedDomainId}>All domains</option>
+		{domains.map((domain) => (
+			<option value={domain.id} selected={selectedDomainId === domain.id}>
+				{domain.host}
+			</option>
+		))}
+	</select>
+</form>
