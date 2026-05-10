@@ -4,8 +4,8 @@ name: Notion Beige
 description: Workspace-calm: warm beige, soft ink, lots of breathing.
 colors:
   primary: "#191918"
-  secondary: "#8C877D"
-  tertiary: "#C26B5B"
+  secondary: "#706A60"
+  tertiary: "#B55C4D"
   neutral: "#F7F6F3"
   surface: "#FFFFFF"
   on-primary: "#FFFFFF"
@@ -57,8 +57,8 @@ A gentle, document-first palette. Warm off-white body, near-black text, restrain
 The palette is built around high-contrast neutrals and a single accent that drives interaction.
 
 - **Primary (`#191918`):** Headlines and core text.
-- **Secondary (`#8C877D`):** Borders, captions, and metadata.
-- **Tertiary (`#C26B5B`):** The sole driver for interaction. Reserve it.
+- **Secondary (`#706A60`):** Borders, captions, and metadata.
+- **Tertiary (`#B55C4D`):** The sole driver for interaction. Reserve it.
 - **Neutral (`#F7F6F3`):** The page foundation.
 
 ## Typography
