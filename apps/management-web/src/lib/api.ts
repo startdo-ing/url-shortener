@@ -70,7 +70,7 @@ export function createRequireApiViewer(
 		}
 
 		const viewer = await dependencies.findViewerByIdFn(userId)
-		if (!viewer || !viewer.isActive) {
+		if (!viewer?.isActive) {
 			return json({ error: "Unauthorized" }, 401)
 		}
 

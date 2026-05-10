@@ -1,5 +1,8 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+  "html": {
+    "experimentalFullSupportEnabled": true
+  },
   "javascript": {
     "formatter": {
       "semicolons": "asNeeded",
@@ -12,17 +15,5 @@
         "noUnusedImports": "error"
       }
     }
-  },
-  "overrides": [
-    {
-      "include": ["**/*.astro"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUnusedImports": "off"
-          }
-        }
-      }
-    }
-  ]
+  }
 }

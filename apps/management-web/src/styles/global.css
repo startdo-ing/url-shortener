@@ -50,7 +50,6 @@
 
 @media (prefers-reduced-motion: no-preference) {
 	html {
-		/* biome-ignore lint/correctness/noUnknownProperty: interpolate-size is a valid CSS property */
 		interpolate-size: allow-keywords;
 	}
 }
@@ -410,11 +409,6 @@ button[data-variant="secondary"] {
 	margin-bottom: var(--spacing-md);
 }
 
-.dashboard-toolbar-wrap .dashboard-toolbar {
-	flex: 1;
-	margin-bottom: 0;
-}
-
 .dashboard-toolbar {
 	display: grid;
 	grid-template-columns: minmax(220px, 1fr) minmax(260px, 2fr) minmax(
@@ -424,6 +418,11 @@ button[data-variant="secondary"] {
 	gap: var(--spacing-md);
 	align-items: end;
 	margin-bottom: var(--spacing-md);
+}
+
+.dashboard-toolbar-wrap .dashboard-toolbar {
+	flex: 1;
+	margin-bottom: 0;
 }
 
 .dashboard-toolbar__left,
