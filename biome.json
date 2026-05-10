@@ -4,6 +4,7 @@
     "experimentalFullSupportEnabled": true
   },
   "javascript": {
+    "experimentalEmbeddedSnippetsEnabled": true,
     "formatter": {
       "semicolons": "asNeeded",
       "trailingCommas": "none"
