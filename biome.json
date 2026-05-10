@@ -5,5 +5,12 @@
       "semicolons": "asNeeded",
       "trailingCommas": "none"
     }
+  },
+  "linter": {
+    "rules": {
+      "correctness": {
+        "noUnusedImports": "error"
+      }
+    }
   }
 }
