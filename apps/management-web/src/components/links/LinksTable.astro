@@ -1,7 +1,10 @@
 ---
-import type {
-	ManagedShortLink,
-	LinkDomainOption
+import EditLinkDialog from "./EditLinkDialog.astro"
+import ConfirmDialog from "../ui/ConfirmDialog.astro"
+import {
+	formatShortLinkUrl,
+	type ManagedShortLink,
+	type LinkDomainOption
 } from "../../lib/models/link"
 
 interface Props {

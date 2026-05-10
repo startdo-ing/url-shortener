@@ -1,4 +1,9 @@
 ---
+import Layout from "../components/Layout.astro"
+import CreateLinkDialog from "../components/links/CreateLinkDialog.astro"
+import DashboardToolbar from "../components/links/DashboardToolbar.svelte"
+import LinksTable from "../components/links/LinksTable.astro"
+import FlashBanners from "../components/ui/FlashBanners.astro"
 import { getDashboardStats, listLinkClickTotals } from "../lib/models/analytics"
 import {
 	listLinkDomains,

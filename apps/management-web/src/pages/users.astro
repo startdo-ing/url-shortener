@@ -1,4 +1,8 @@
 ---
+import Layout from "../components/Layout.astro"
+import ApiTokensPanel from "../components/users/ApiTokensPanel.astro"
+import FlashBanners from "../components/ui/FlashBanners.astro"
+import UsersTable from "../components/users/UsersTable.astro"
 import { loadPageContext } from "../lib/page"
 import { listApiTokens } from "../lib/models/api-token"
 import { listUsers } from "../lib/models/user"
