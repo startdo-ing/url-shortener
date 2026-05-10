@@ -17,7 +17,6 @@ import {
 	countLocalUsers,
 	createFirstAdminFromKeycloak,
 	findViewerById,
-	type Viewer
 } from "./lib/models/user"
 import { logger } from "./lib/observability/logger"
 import { incrementCounter, recordDuration } from "./lib/observability/metrics"
