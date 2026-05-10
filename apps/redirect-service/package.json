@@ -13,6 +13,6 @@
   },
   "dependencies": {
     "@url-shortener/shared-db": "workspace:*",
-    "drizzle-orm": "^0.43.0"
+    "drizzle-orm": "^0.43.1"
   }
 }

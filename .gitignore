@@ -10,3 +10,4 @@ apps/portal/.astro/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+.playwright-mcp/

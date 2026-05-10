@@ -6,12 +6,18 @@ interface Props {
 	domains: LinkDomainOption[]
 	formAction?: string
 	returnTo?: string
+	dialogIdSuffix?: string
 }
 
 const { link, domains } = Astro.props
 const formAction = Astro.props.formAction ?? "/dashboard"
 const returnTo = Astro.props.returnTo ?? "/dashboard"
-const dialogId = `edit-link-${link.id}`
+const dialogIdSuffix = Astro.props.dialogIdSuffix
+const dialogIdBase = `edit-link-${link.id}`
+const dialogId =
+	typeof dialogIdSuffix === "string" && dialogIdSuffix.length > 0
+		? `${dialogIdBase}-${dialogIdSuffix}`
+		: dialogIdBase
 const closeId = `${dialogId}-close`
 const HTTP_CODE_LABELS: Record<number, string> = {
 	301: "301 Moved Permanently",

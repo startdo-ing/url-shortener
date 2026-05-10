@@ -36,66 +36,123 @@ const { apiTokens } = Astro.props
 {apiTokens.length === 0 ? (
 	<p>No API tokens yet. Create one above to enable bearer-token API access.</p>
 ) : (
-	<table class="data-table">
-		<thead>
-			<tr>
-				<th>Name</th>
-				<th>Status</th>
-				<th>Prefix</th>
-				<th>Created By</th>
-				<th>Usage</th>
-				<th>Actions</th>
-			</tr>
-		</thead>
-		<tbody>
+	<>
+		<div class="responsive-table-desktop">
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Status</th>
+						<th>Prefix</th>
+						<th>Created By</th>
+						<th>Usage</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{apiTokens.map((token) => (
+						<tr>
+							<td>
+								<strong>{token.name}</strong>
+								<div class="table-meta">Created {token.createdAt}</div>
+								{token.revokedAt ? (
+									<div class="table-meta">Removed {token.revokedAt}</div>
+								) : null}
+							</td>
+							<td>
+								<span class={`badge badge--${token.revokedAt ? "disabled" : "active"}`}>
+									{token.revokedAt ? "removed" : "active"}
+								</span>
+							</td>
+							<td>
+								<code>{token.tokenPrefix}...</code>
+							</td>
+							<td>{token.createdByEmail}</td>
+							<td>
+								<strong>{token.usageCount}</strong>
+								<div class="table-meta">
+									{token.lastUsedAt ? `Last used ${token.lastUsedAt}` : "Never used"}
+								</div>
+							</td>
+							<td>
+								<div class="row-actions">
+									<form action="/users" method="post">
+										<input name="intent" type="hidden" value="api-token-rotate" />
+										<input name="tokenId" type="hidden" value={token.id} />
+										<button disabled={token.revokedAt != null} type="submit">
+											Rotate
+										</button>
+									</form>
+									<form action="/users" method="post">
+										<input name="intent" type="hidden" value="api-token-remove" />
+										<input name="tokenId" type="hidden" value={token.id} />
+										<button
+											data-variant="secondary"
+											disabled={token.revokedAt != null}
+											type="submit"
+										>
+											Remove
+										</button>
+									</form>
+								</div>
+							</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
+
+		<div class="responsive-card-list">
 			{apiTokens.map((token) => (
-				<tr>
-					<td>
-						<strong>{token.name}</strong>
-						<div class="table-meta">Created {token.createdAt}</div>
-						{token.revokedAt ? (
-							<div class="table-meta">Removed {token.revokedAt}</div>
-						) : null}
-					</td>
-					<td>
-						<span class={`badge badge--${token.revokedAt ? "disabled" : "active"}`}>
-							{token.revokedAt ? "removed" : "active"}
-						</span>
-					</td>
-					<td>
-						<code>{token.tokenPrefix}...</code>
-					</td>
-					<td>{token.createdByEmail}</td>
-					<td>
-						<strong>{token.usageCount}</strong>
-						<div class="table-meta">
-							{token.lastUsedAt ? `Last used ${token.lastUsedAt}` : "Never used"}
+				<article class="responsive-card-item">
+					<div class="responsive-card-grid">
+						<div class="responsive-card-label">Name</div>
+						<div class="responsive-card-value">
+							<strong>{token.name}</strong>
+							<div class="table-meta">Created {token.createdAt}</div>
+							{token.revokedAt ? <div class="table-meta">Removed {token.revokedAt}</div> : null}
 						</div>
-					</td>
-					<td>
-						<div class="row-actions">
-							<form action="/users" method="post">
-								<input name="intent" type="hidden" value="api-token-rotate" />
-								<input name="tokenId" type="hidden" value={token.id} />
-								<button disabled={token.revokedAt != null} type="submit">
-									Rotate
-								</button>
-							</form>
-							<form action="/users" method="post">
-								<input name="intent" type="hidden" value="api-token-remove" />
-								<input name="tokenId" type="hidden" value={token.id} />
-								<button
-									data-variant="secondary"
-									disabled={token.revokedAt != null}
-									type="submit"
-								>
-									Remove
-								</button>
-							</form>
+
+						<div class="responsive-card-label">Status</div>
+						<div class="responsive-card-value">
+							<span class={`badge badge--${token.revokedAt ? "disabled" : "active"}`}>
+								{token.revokedAt ? "removed" : "active"}
+							</span>
 						</div>
-					</td>
-				</tr>
+
+						<div class="responsive-card-label">Prefix</div>
+						<div class="responsive-card-value">
+							<code>{token.tokenPrefix}...</code>
+						</div>
+
+						<div class="responsive-card-label">Created By</div>
+						<div class="responsive-card-value">{token.createdByEmail}</div>
+
+						<div class="responsive-card-label">Usage</div>
+						<div class="responsive-card-value">
+							<strong>{token.usageCount}</strong>
+							<div class="table-meta">
+								{token.lastUsedAt ? `Last used ${token.lastUsedAt}` : "Never used"}
+							</div>
+						</div>
+					</div>
+
+					<div class="row-actions row-actions--mobile">
+						<form action="/users" method="post">
+							<input name="intent" type="hidden" value="api-token-rotate" />
+							<input name="tokenId" type="hidden" value={token.id} />
+							<button disabled={token.revokedAt != null} type="submit">Rotate</button>
+						</form>
+						<form action="/users" method="post">
+							<input name="intent" type="hidden" value="api-token-remove" />
+							<input name="tokenId" type="hidden" value={token.id} />
+							<button data-variant="secondary" disabled={token.revokedAt != null} type="submit">
+								Remove
+							</button>
+						</form>
+					</div>
+				</article>
 			))}
-		</tbody>
-	</table>
+		</div>
+	</>
 )}

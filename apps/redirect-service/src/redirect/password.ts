@@ -22,7 +22,10 @@ export async function readPasswordFromRequest(
 	return trimmed.length > 0 ? trimmed : null
 }
 
-export function verifyLinkPassword(password: string, storedHash: string): boolean {
+export function verifyLinkPassword(
+	password: string,
+	storedHash: string
+): boolean {
 	const [version, salt, expectedKey] = storedHash.split(":")
 	if (version !== "s1" || !salt || !expectedKey) {
 		return false

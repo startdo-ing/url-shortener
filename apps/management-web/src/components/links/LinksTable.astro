@@ -23,67 +23,144 @@ const returnTo = Astro.props.returnTo ?? "/dashboard"
 {links.length === 0 ? (
 	<p>No short links match the current filters.</p>
 ) : (
-	<table class="data-table">
-		<thead>
-			<tr>
-				<th>Link</th>
-				<th>Target</th>
-				<th>Total Click</th>
-				<th>Status</th>
-				<th>HTTP</th>
-				<th>Expires</th>
-				<th>Actions</th>
-			</tr>
-		</thead>
-		<tbody>
-			{links.map((link) => (
-				<tr>
-					{(() => {
-						const shortUrl = formatShortLinkUrl(link.domainHost, link.slug)
-						const isProtected = link.passwordHash != null
+	<>
+		<div class="links-table-desktop">
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th>Link</th>
+						<th>Target</th>
+						<th>Total Click</th>
+						<th>Status</th>
+						<th>HTTP</th>
+						<th>Expires</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{links.map((link) => (
+						<tr>
+							{(() => {
+								const shortUrl = formatShortLinkUrl(link.domainHost, link.slug)
+								const isProtected = link.passwordHash != null
 
-						return (
-							<>
-					<td>
-						<a
-							class="table-link"
-							href={shortUrl}
-							rel="noreferrer"
-							target="_blank"
-						>
-							<span aria-hidden="true" class="table-link__icon">
-								{isProtected ? "🔑" : "🌍"}
-							</span>
-							<strong>{shortUrl}</strong>
-						</a>
-					</td>
-					<td>
-						<a
-							class="table-link"
-							href={link.targetUrl}
-							rel="noreferrer"
-							target="_blank"
-						>
-							{link.targetUrl}
-						</a>
-					</td>
-					<td>{link.totalClicks}</td>
-					<td>
-						<span class={`badge badge--${link.status}`}>{link.status}</span>
-					</td>
-					<td>{link.httpCode}</td>
-					<td>{link.expiresAt ?? "—"}</td>
-					<td>
-						<div class="row-actions">
+								return (
+									<>
+										<td>
+											<a
+												class="table-link"
+												href={shortUrl}
+												rel="noreferrer"
+												target="_blank"
+											>
+												<span aria-hidden="true" class="table-link__icon">
+													{isProtected ? "🔑" : "🌍"}
+												</span>
+												<strong>{shortUrl}</strong>
+											</a>
+										</td>
+										<td>
+											<a
+												class="table-link"
+												href={link.targetUrl}
+												rel="noreferrer"
+												target="_blank"
+											>
+												{link.targetUrl}
+											</a>
+										</td>
+										<td>{link.totalClicks}</td>
+										<td>
+											<span class={`badge badge--${link.status}`}>{link.status}</span>
+										</td>
+										<td>{link.httpCode}</td>
+										<td>{link.expiresAt ?? "—"}</td>
+										<td>
+											<div class="row-actions">
+												<EditLinkDialog
+													dialogIdSuffix="desktop"
+													domains={domains}
+													formAction={formAction}
+													link={link}
+													returnTo={returnTo}
+												/>
+												<ConfirmDialog
+													description="You are about to delete the following link. This action cannot be undone."
+													detailRows={[
+														{ label: "Short Link", value: shortUrl },
+														{ label: "Target", value: link.targetUrl }
+													]}
+													dialogId={`delete-link-${link.id}-desktop`}
+													formAction={formAction}
+													idFieldName="linkId"
+													idFieldValue={link.id}
+													intentValue="delete"
+													labelFieldValue={shortUrl}
+													returnTo={returnTo}
+													title="Delete Link"
+													confirmLabel="Delete"
+													triggerLabel="Delete"
+													triggerVariant="secondary"
+												/>
+											</div>
+										</td>
+									</>
+								)
+							})()}
+						</tr>
+					))}
+				</tbody>
+			</table>
+		</div>
+
+		<div class="links-mobile-list">
+			{links.map((link) => {
+				const shortUrl = formatShortLinkUrl(link.domainHost, link.slug)
+
+				return (
+					<article class="link-mobile-card">
+						<div class="link-mobile-card__grid">
+							<div class="link-mobile-card__label">Short Link</div>
+							<div class="link-mobile-card__value">
+								<a class="table-link" href={shortUrl} rel="noreferrer" target="_blank">
+									{shortUrl}
+								</a>
+							</div>
+
+							<div class="link-mobile-card__label">Target</div>
+							<div class="link-mobile-card__value">
+								<a class="table-link" href={link.targetUrl} rel="noreferrer" target="_blank">
+									{link.targetUrl}
+								</a>
+							</div>
+
+							<div class="link-mobile-card__label">Status</div>
+							<div class="link-mobile-card__value">
+								<span class={`badge badge--${link.status}`}>{link.status}</span>
+							</div>
+
+							<div class="link-mobile-card__label">Expires</div>
+							<div class="link-mobile-card__value">{link.expiresAt ?? "—"}</div>
+
+							<div class="link-mobile-card__label">Total Clicks</div>
+							<div class="link-mobile-card__value">{link.totalClicks}</div>
+						</div>
+
+						<div class="row-actions row-actions--mobile">
 							<EditLinkDialog
+								dialogIdSuffix="mobile"
 								domains={domains}
 								formAction={formAction}
 								link={link}
 								returnTo={returnTo}
 							/>
 							<ConfirmDialog
-								description={`Delete ${shortUrl}? This action cannot be undone.`}
-								dialogId={`delete-link-${link.id}`}
+								description="You are about to delete the following link. This action cannot be undone."
+								detailRows={[
+									{ label: "Short Link", value: shortUrl },
+									{ label: "Target", value: link.targetUrl }
+								]}
+								dialogId={`delete-link-${link.id}-mobile`}
 								formAction={formAction}
 								idFieldName="linkId"
 								idFieldValue={link.id}
@@ -96,12 +173,9 @@ const returnTo = Astro.props.returnTo ?? "/dashboard"
 								triggerVariant="secondary"
 							/>
 						</div>
-					</td>
-							</>
-						)
-					})()}
-				</tr>
-			))}
-		</tbody>
-	</table>
+					</article>
+				)
+			})}
+		</div>
+	</>
 )}

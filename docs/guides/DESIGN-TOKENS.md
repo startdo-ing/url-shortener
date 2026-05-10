@@ -38,8 +38,8 @@ Tokens map from `design.md` keys to CSS custom properties:
 | `design.md` key    | CSS variable           | Value       | Use                                |
 |--------------------|------------------------|-------------|------------------------------------|
 | `colors.primary`   | `--color-primary`      | `#191918`   | Headings, body text                |
-| `colors.secondary` | `--color-secondary`    | `#8C877D`   | Labels, borders, metadata          |
-| `colors.tertiary`  | `--color-tertiary`     | `#C26B5B`   | Primary action (one per screen)    |
+| `colors.secondary` | `--color-secondary`    | `#706A60`   | Labels, borders, metadata          |
+| `colors.tertiary`  | `--color-tertiary`     | `#B55C4D`   | Primary action (one per screen)    |
 | `colors.neutral`   | `--color-neutral`      | `#F7F6F3`   | Page background                    |
 | `colors.surface`   | `--color-surface`      | `#FFFFFF`   | Cards, inputs, header background   |
 | `colors.on-primary`| `--color-on-primary`   | `#FFFFFF`   | Text on tertiary backgrounds       |

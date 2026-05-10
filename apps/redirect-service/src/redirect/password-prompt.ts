@@ -16,8 +16,8 @@ export function renderPasswordPrompt(
 	<style>
 		:root {
 			--color-primary: #191918;
-			--color-secondary: #8c877d;
-			--color-tertiary: #c26b5b;
+			--color-secondary: #706a60;
+			--color-tertiary: #b55c4d;
 			--color-neutral: #f7f6f3;
 			--color-surface: #ffffff;
 			--radius-sm: 4px;
@@ -89,7 +89,7 @@ export function renderPasswordPrompt(
 		label {
 			display: grid;
 			gap: 6px;
-			font-size: 0.72rem;
+			font-size: 1rem;
 			font-weight: 700;
 			letter-spacing: 0.02em;
 			text-transform: uppercase;
@@ -139,7 +139,7 @@ export function renderPasswordPrompt(
     <form method="post" action="${action}">
       <label>
         Password
-        <input name="password" type="password" required />
+        <input autofocus name="password" type="password" required />
       </label>
       <button type="submit">Continue</button>
     </form>

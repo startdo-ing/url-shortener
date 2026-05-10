@@ -3,7 +3,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.4.15",
 		"@types/bun": "^1.3.13",
-		"@typescript/native-preview": "^7.0.0-dev.20260509.2"
+		"@typescript/native-preview": "^7.0.0-dev.20260510.1"
 	},
 	"private": true,
 	"scripts": {
@@ -27,7 +27,7 @@
 		"db:lint": "cd packages/shared-db && bun run lint",
 		"db:format": "cd packages/shared-db && bun run format",
 		"test": "bun run redirect:test && bun run web:test",
-		"check-all": "bun run redirect:lint && bun run web:lint && bun run db:lint && bun run redirect:typecheck && bun run web:typecheck && bun run db:typecheck && bun run test"
+		"check-all": "bun run redirect:format && bun run web:format && bun run redirect:lint && bun run web:lint && bun run db:lint && bun run redirect:typecheck && bun run web:typecheck && bun run db:typecheck && bun run test"
 	},
 	"workspaces": ["apps/management-web", "apps/redirect-service", "packages/*"]
 }

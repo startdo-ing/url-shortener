@@ -16,7 +16,7 @@ import { handleUserMutation } from "./lib/handlers/users"
 import {
 	countLocalUsers,
 	createFirstAdminFromKeycloak,
-	findViewerById,
+	findViewerById
 } from "./lib/models/user"
 import { logger } from "./lib/observability/logger"
 import { incrementCounter, recordDuration } from "./lib/observability/metrics"
@@ -39,7 +39,7 @@ const authRateLimiter = (() => {
 			const cutoff = now - windowMs
 			const timestamps = (windows.get(ip) ?? []).filter((t) => t > cutoff)
 			const allowed = timestamps.length < maxRequests
-			
+
 			if (!allowed) {
 				logger.warn("rate limit exceeded", {
 					ip,
@@ -48,12 +48,12 @@ const authRateLimiter = (() => {
 					maxRequests
 				})
 			}
-			
+
 			if (allowed) {
 				timestamps.push(now)
 				windows.set(ip, timestamps)
 			}
-			
+
 			return allowed
 		}
 	}

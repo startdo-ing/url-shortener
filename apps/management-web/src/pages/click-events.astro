@@ -19,28 +19,55 @@ const [{ viewer, error, notice }, recentEvents] = await Promise.all([
 		{recentEvents.length === 0 ? (
 			<p>No click events recorded yet.</p>
 		) : (
-			<table class="data-table">
-				<thead>
-					<tr>
-						<th>Occurred At</th>
-						<th>Link</th>
-						<th>Path</th>
-						<th>Referrer</th>
-						<th>Country</th>
-					</tr>
-				</thead>
-				<tbody>
+			<>
+				<div class="responsive-table-desktop">
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th>Occurred At</th>
+								<th>Link</th>
+								<th>Path</th>
+								<th>Referrer</th>
+								<th>Country</th>
+							</tr>
+						</thead>
+						<tbody>
+							{recentEvents.map((event) => (
+								<tr>
+									<td>{event.occurredAt}</td>
+									<td>{event.domainHost}/{event.slug}</td>
+									<td>{event.requestPath}</td>
+									<td>{event.referer ?? "-"}</td>
+									<td>{event.countryCode ?? "-"}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+
+				<div class="responsive-card-list">
 					{recentEvents.map((event) => (
-						<tr>
-							<td>{event.occurredAt}</td>
-							<td>{event.domainHost}/{event.slug}</td>
-							<td>{event.requestPath}</td>
-							<td>{event.referer ?? "-"}</td>
-							<td>{event.countryCode ?? "-"}</td>
-						</tr>
+						<article class="responsive-card-item">
+							<div class="responsive-card-grid">
+								<div class="responsive-card-label">Occurred At</div>
+								<div class="responsive-card-value">{event.occurredAt}</div>
+
+								<div class="responsive-card-label">Link</div>
+								<div class="responsive-card-value">{event.domainHost}/{event.slug}</div>
+
+								<div class="responsive-card-label">Path</div>
+								<div class="responsive-card-value">{event.requestPath}</div>
+
+								<div class="responsive-card-label">Referrer</div>
+								<div class="responsive-card-value">{event.referer ?? "-"}</div>
+
+								<div class="responsive-card-label">Country</div>
+								<div class="responsive-card-value">{event.countryCode ?? "-"}</div>
+							</div>
+						</article>
 					))}
-				</tbody>
-			</table>
+				</div>
+			</>
 		)}
 	</section>
 </Layout>

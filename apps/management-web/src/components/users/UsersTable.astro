@@ -13,81 +13,145 @@ const activeAdminCount = users.filter(
 ).length
 ---
 
-<table class="data-table">
-	<thead>
-		<tr>
-			<th>User</th>
-			<th>Role</th>
-			<th>Status</th>
-			<th>Actions</th>
-		</tr>
-	</thead>
-	<tbody>
-		{users.map((managedUser) => {
-			const isCurrentUser = managedUser.id === viewerId
-			const isLastActiveAdmin =
-				managedUser.role === "admin" &&
-				managedUser.isActive &&
-				activeAdminCount === 1
-			const actionDisabled = isCurrentUser || isLastActiveAdmin
-			const roleIntent = managedUser.role === "admin" ? "demote" : "promote"
-			const roleLabel =
-				managedUser.role === "admin" ? "Make member" : "Promote to admin"
-			const accessIntent = managedUser.isActive ? "disable" : "enable"
-			const accessLabel = managedUser.isActive ? "Disable access" : "Enable access"
+<div class="responsive-table-desktop">
+	<table class="data-table">
+		<thead>
+			<tr>
+				<th>User</th>
+				<th>Role</th>
+				<th>Status</th>
+				<th>Actions</th>
+			</tr>
+		</thead>
+		<tbody>
+			{users.map((managedUser) => {
+				const isCurrentUser = managedUser.id === viewerId
+				const isLastActiveAdmin =
+					managedUser.role === "admin" &&
+					managedUser.isActive &&
+					activeAdminCount === 1
+				const actionDisabled = isCurrentUser || isLastActiveAdmin
+				const roleIntent = managedUser.role === "admin" ? "demote" : "promote"
+				const roleLabel =
+					managedUser.role === "admin" ? "Make member" : "Promote to admin"
+				const accessIntent = managedUser.isActive ? "disable" : "enable"
+				const accessLabel = managedUser.isActive ? "Disable access" : "Enable access"
 
-			return (
-				<tr>
-					<td>
+				return (
+					<tr>
+						<td>
+							<strong>{managedUser.displayName ?? managedUser.email}</strong>
+							<div class="table-meta">{managedUser.email}</div>
+							{isCurrentUser ? <div class="table-meta">Your account</div> : null}
+							{isLastActiveAdmin ? (
+								<div class="table-meta">Last active admin</div>
+							) : null}
+						</td>
+						<td>
+							<span
+								class={`badge badge--${managedUser.role === "admin" ? "primary" : "disabled"}`}
+							>
+								{managedUser.role}
+							</span>
+						</td>
+						<td>
+							<span
+								class={`badge badge--${managedUser.isActive ? "active" : "disabled"}`}
+							>
+								{managedUser.isActive ? "active" : "disabled"}
+							</span>
+						</td>
+						<td>
+							<div class="row-actions">
+								<form action="/users" method="post">
+									<input name="userId" type="hidden" value={managedUser.id} />
+									<input name="intent" type="hidden" value={roleIntent} />
+									<button
+										data-variant="secondary"
+										disabled={actionDisabled}
+										type="submit"
+									>
+										{roleLabel}
+									</button>
+								</form>
+								<form action="/users" method="post">
+									<input name="userId" type="hidden" value={managedUser.id} />
+									<input name="intent" type="hidden" value={accessIntent} />
+									<button
+										data-variant="secondary"
+										disabled={actionDisabled}
+										type="submit"
+									>
+										{accessLabel}
+									</button>
+								</form>
+							</div>
+						</td>
+					</tr>
+				)
+			})}
+		</tbody>
+	</table>
+</div>
+
+<div class="responsive-card-list">
+	{users.map((managedUser) => {
+		const isCurrentUser = managedUser.id === viewerId
+		const isLastActiveAdmin =
+			managedUser.role === "admin" && managedUser.isActive && activeAdminCount === 1
+		const actionDisabled = isCurrentUser || isLastActiveAdmin
+		const roleIntent = managedUser.role === "admin" ? "demote" : "promote"
+		const roleLabel = managedUser.role === "admin" ? "Make member" : "Promote to admin"
+		const accessIntent = managedUser.isActive ? "disable" : "enable"
+		const accessLabel = managedUser.isActive ? "Disable access" : "Enable access"
+
+		return (
+			<article class="responsive-card-item">
+				<div class="responsive-card-grid">
+					<div class="responsive-card-label">User</div>
+					<div class="responsive-card-value">
 						<strong>{managedUser.displayName ?? managedUser.email}</strong>
 						<div class="table-meta">{managedUser.email}</div>
 						{isCurrentUser ? <div class="table-meta">Your account</div> : null}
-						{isLastActiveAdmin ? (
-							<div class="table-meta">Last active admin</div>
-						) : null}
-					</td>
-					<td>
+						{isLastActiveAdmin ? <div class="table-meta">Last active admin</div> : null}
+					</div>
+
+					<div class="responsive-card-label">Role</div>
+					<div class="responsive-card-value">
 						<span
 							class={`badge badge--${managedUser.role === "admin" ? "primary" : "disabled"}`}
 						>
 							{managedUser.role}
 						</span>
-					</td>
-					<td>
+					</div>
+
+					<div class="responsive-card-label">Status</div>
+					<div class="responsive-card-value">
 						<span
 							class={`badge badge--${managedUser.isActive ? "active" : "disabled"}`}
 						>
 							{managedUser.isActive ? "active" : "disabled"}
 						</span>
-					</td>
-					<td>
-						<div class="row-actions">
-							<form action="/users" method="post">
-								<input name="userId" type="hidden" value={managedUser.id} />
-								<input name="intent" type="hidden" value={roleIntent} />
-								<button
-									data-variant="secondary"
-									disabled={actionDisabled}
-									type="submit"
-								>
-									{roleLabel}
-								</button>
-							</form>
-							<form action="/users" method="post">
-								<input name="userId" type="hidden" value={managedUser.id} />
-								<input name="intent" type="hidden" value={accessIntent} />
-								<button
-									data-variant="secondary"
-									disabled={actionDisabled}
-									type="submit"
-								>
-									{accessLabel}
-								</button>
-							</form>
-						</div>
-					</td>
-				</tr>
-			)
-		})}
-	</tbody>
-</table>
+					</div>
+				</div>
+
+				<div class="row-actions row-actions--mobile">
+					<form action="/users" method="post">
+						<input name="userId" type="hidden" value={managedUser.id} />
+						<input name="intent" type="hidden" value={roleIntent} />
+						<button data-variant="secondary" disabled={actionDisabled} type="submit">
+							{roleLabel}
+						</button>
+					</form>
+					<form action="/users" method="post">
+						<input name="userId" type="hidden" value={managedUser.id} />
+						<input name="intent" type="hidden" value={accessIntent} />
+						<button data-variant="secondary" disabled={actionDisabled} type="submit">
+							{accessLabel}
+						</button>
+					</form>
+				</div>
+			</article>
+		)
+	})}
+</div>

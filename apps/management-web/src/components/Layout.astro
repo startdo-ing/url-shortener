@@ -1,14 +1,19 @@
 ---
 import type { Viewer } from "../lib/models/user.ts"
 import { hasPermission } from "../lib/auth/permissions.ts"
-import "../styles/global.css"
+import { House } from "lucide-astro"
+import globalCss from "../styles/global.css?raw"
 
 interface Props {
 	title: string
 	viewer?: Viewer | null
+	centered?: boolean
 }
 
-const { title, viewer } = Astro.props
+const { title, viewer, centered = false } = Astro.props
+const canViewAnalytics = viewer ? hasPermission(viewer, "analytics:view") : false
+const canManageDomains = viewer ? hasPermission(viewer, "domains:manage") : false
+const canManageUsers = viewer ? hasPermission(viewer, "users:manage") : false
 ---
 
 <!doctype html>
@@ -17,35 +22,54 @@ const { title, viewer } = Astro.props
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>{title}</title>
+		<Fragment set:html={`<style>${globalCss}</style>`} />
 	</head>
 	<body>
 		<div class="shell">
+			{viewer ? (
 			<header class="site-header">
-				<nav class="site-nav">
-					<a href="/">Home</a>
-					{viewer ? <a href="/dashboard">Dashboard</a> : null}
-					{viewer && hasPermission(viewer, "analytics:view") ? (
-						<a href="/click-events">Click Events</a>
-					) : null}
-					{
-						viewer && hasPermission(viewer, "domains:manage") ? (
-							<a href="/domains">Domains</a>
-						) : null
-					}
-					{viewer && hasPermission(viewer, "users:manage") ? <a href="/users">Users</a> : null}
-				</nav>
-				{
-					viewer ? (
+						<button
+							class="site-header__menu-toggle"
+							type="button"
+							aria-expanded="false"
+							aria-controls="site-header-panel"
+						>Menu</button>
 						<div class="site-user">
 							<span>{viewer.displayName ?? viewer.email}</span>
 							<form action="/auth/logout" method="post">
 								<button type="submit">Sign out</button>
 							</form>
 						</div>
-					) : null
-				}
+						<div class="site-header__menu-panel" id="site-header-panel">
+							<nav class="site-nav" aria-label="Primary">
+								<ul class="site-nav__list">
+							<li>
+								<a class="tap-area" href="/dashboard">
+									<House aria-hidden="true" class="site-nav__icon" size={14} />
+									<span>Dashboard</span>
+								</a>
+							</li>
+									{canViewAnalytics ? (
+										<li><a class="tap-area" href="/click-events">Click Events</a></li>
+									) : null}
+									{canManageDomains ? <li><a class="tap-area" href="/domains">Domains</a></li> : null}
+									{canManageUsers ? <li><a class="tap-area" href="/users">Users</a></li> : null}
+								</ul>
+							</nav>
+						</div>
 			</header>
-			<main class="page-content">
+			) : null}
+			<script>
+				const toggle = document.querySelector('.site-header__menu-toggle');
+				const panel = document.getElementById('site-header-panel');
+				if (toggle && panel) {
+					toggle.addEventListener('click', () => {
+						const open = panel.classList.toggle('site-header__menu-panel--open');
+						toggle.setAttribute('aria-expanded', String(open));
+					});
+				}
+			</script>
+			<main class:list={["page-content", { "page-content--centered": centered }]}>
 				<slot />
 			</main>
 		</div>

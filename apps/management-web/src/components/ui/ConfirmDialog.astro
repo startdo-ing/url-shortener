@@ -12,6 +12,7 @@ interface Props {
 	returnTo?: string
 	triggerLabel?: string
 	triggerVariant?: "primary" | "secondary"
+	detailRows?: Array<{ label: string; value: string }>
 }
 
 const {
@@ -26,7 +27,8 @@ const {
 	labelFieldValue,
 	returnTo = "/dashboard",
 	triggerLabel = "Delete",
-	triggerVariant = "secondary"
+	triggerVariant = "secondary",
+	detailRows
 } = Astro.props
 
 const triggerId = `${dialogId}-trigger`
@@ -54,12 +56,24 @@ const closeId = `${dialogId}-close`
 		</button>
 	</div>
 	<p>{description}</p>
+	{detailRows && detailRows.length > 0 ? (
+		<table class="confirm-detail-table">
+			<tbody>
+				{detailRows.map((row) => (
+					<tr>
+						<th>{row.label}</th>
+						<td>{row.value}</td>
+					</tr>
+				))}
+			</tbody>
+		</table>
+	) : null}
 	<form action={formAction} method="post">
 		<input name="intent" type="hidden" value={intentValue} />
 		<input name={idFieldName} type="hidden" value={idFieldValue} />
 		{labelFieldValue ? <input name="label" type="hidden" value={labelFieldValue} /> : null}
 		<input name="returnTo" type="hidden" value={returnTo} />
-		<div class="form-actions">
+		<div class="form-actions form-actions--end">
 			<button id={`${dialogId}-cancel`} type="button" data-variant="secondary">Cancel</button>
 			<button type="submit">{confirmLabel}</button>
 		</div>

@@ -5,7 +5,10 @@ import { and, eq } from "drizzle-orm"
 import { SLUG_PATTERN } from "../config.ts"
 import { rateLimiter as defaultRateLimiter } from "../rate-limiter.ts"
 import { emitClickEvent } from "../redirect/click-events.ts"
-import { readPasswordFromRequest, verifyLinkPassword } from "../redirect/password.ts"
+import {
+	readPasswordFromRequest,
+	verifyLinkPassword
+} from "../redirect/password.ts"
 import { renderPasswordPrompt } from "../redirect/password-prompt.ts"
 
 export async function handleRedirectRequest(

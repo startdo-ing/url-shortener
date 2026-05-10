@@ -7,5 +7,47 @@ interface Props {
 const { error, notice } = Astro.props
 ---
 
-{notice ? <p class="banner banner--notice">{notice}</p> : null}
-{error ? <p class="banner banner--error">{error}</p> : null}
+<div class="toast-container" aria-live="polite" aria-atomic="false">
+	{notice ? (
+		<div class="toast toast--notice" data-toast>
+			<span class="toast__message">{notice}</span>
+			<button class="toast__close" type="button" aria-label="Dismiss">✕</button>
+		</div>
+	) : null}
+	{error ? (
+		<div class="toast toast--error" data-toast>
+			<span class="toast__message">{error}</span>
+			<button class="toast__close" type="button" aria-label="Dismiss">✕</button>
+		</div>
+	) : null}
+</div>
+
+<script>
+	function dismiss(toast: HTMLElement) {
+		toast.classList.remove("toast--visible")
+		// Fallback: remove the element even if transitionend never fires
+		// (e.g. when prefers-reduced-motion suppresses the transition).
+		const fallback = setTimeout(() => toast.remove(), 300)
+		toast.addEventListener(
+			"transitionend",
+			() => {
+				clearTimeout(fallback)
+				toast.remove()
+			},
+			{ once: true }
+		)
+	}
+
+	for (const toast of document.querySelectorAll<HTMLElement>("[data-toast]")) {
+		requestAnimationFrame(() => {
+			toast.classList.add("toast--visible")
+		})
+
+		const timer = setTimeout(() => dismiss(toast), 5000)
+
+		toast.querySelector(".toast__close")?.addEventListener("click", () => {
+			clearTimeout(timer)
+			dismiss(toast)
+		})
+	}
+</script>
