@@ -12,7 +12,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted
+    runs-on: [self-hosted, vps]
     env:
       HOME_SERVER_HOST: ${{ secrets.HOME_SERVER_HOST }}
       HOME_SERVER_USER: ${{ secrets.HOME_SERVER_USER }}
